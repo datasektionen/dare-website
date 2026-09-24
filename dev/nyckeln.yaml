@@ -1,0 +1,51 @@
+# Config for the local SSO + Hive mock (nyckeln-under-dorrmattan).
+# On the login page, enter the kth_id of one of the users below.
+
+clients:
+  - id: dare
+    secret: dev-secret
+    # Also let in KTH users who aren't chapter members (from `ldap` below).
+    allows_guests: true
+    redirect_uris:
+      - http://localhost:3000/auth/callback
+      - http://localhost:3001/auth/callback
+
+users:
+  # Admin: member of dÅrestaben below.
+  - ug_kth_id: u1turetek
+    kth_id: turetek
+    email: turetek@kth.se
+    first_name: Ture
+    family_name: Teknolog
+    year_tag: D-23
+    membership: ordinary
+  # Regular chapter member.
+  - ug_kth_id: u1nollan
+    kth_id: nollan
+    email: nollan@kth.se
+    first_name: Nollan
+    family_name: Nollansson
+    year_tag: D-26
+    membership: ordinary
+
+hive:
+  tokens:
+    # Any bearer token is accepted by the mock.
+    - secret: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa
+      permissions:
+        - id: api-list-tagged
+          scope: null
+  groups:
+    - name: dÅrestaben
+      description: dÅre Staff
+      id: darestaben
+      domain: datasektionen.se
+      members:
+        - turetek
+
+# KTH users outside the chapter, allowed in as guests.
+ldap:
+  - ug_kth_id: u1gaest
+    kth_id: gaest
+    first_name: Gäst
+    family_name: Gästsson
