@@ -12,14 +12,14 @@ const envSchema = z.object({
   OIDC_ISSUER: z.url(),
   OIDC_CLIENT_ID: z.string().min(1),
   OIDC_CLIENT_SECRET: z.string().min(1),
-  OIDC_SCOPES: z.string().default("openid profile email"),
-  HIVE_URL: z.url(),
-  HIVE_API_TOKEN: z.string().min(1),
-  /** Members of this Hive group (`id@domain`) are admins. */
-  ADMIN_GROUP: z
-    .string()
-    .regex(/^[^@]+@[^@]+$/)
-    .default("darestaben@datasektionen.se"),
+  /**
+   * SSO's internal API (not the public OIDC issuer), used for profile
+   * pictures. Production: http://sso.nomad.dsekt.internal. Without it,
+   * avatars fall back to initials.
+   */
+  SSO_API_URL: z.url().optional(),
+  /** `permissions` returns the user's Hive permissions in the `dare` system. */
+  OIDC_SCOPES: z.string().default("openid profile email permissions"),
 })
 
 /** Server-only environment. Never import this from client code. */

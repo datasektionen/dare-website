@@ -32,15 +32,13 @@ job "dare" {
 DATABASE_URL=postgres://dare:{{ .db_password }}@postgres.dsekt.internal:5432/dare
 SESSION_SECRET={{ .session_secret }}
 OIDC_CLIENT_SECRET={{ .oidc_client_secret }}
-HIVE_API_TOKEN={{ .hive_api_token }}
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
 NODE_ENV=production
 APP_URL=https://xn--dre-ula.se
 OIDC_ISSUER=https://sso.datasektionen.se/op
 OIDC_CLIENT_ID=dare
-HIVE_URL=https://hive.datasektionen.se/api/v1
-ADMIN_GROUP=darestaben@datasektionen.se
+SSO_API_URL=http://sso.nomad.dsekt.internal
 ENV
         destination = "local/.env"
         env         = true

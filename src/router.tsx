@@ -27,4 +27,14 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: ReturnType<typeof getRouter>
   }
+  interface StaticDataRouteOption {
+    /** Set to false for pages with their own header (default true). */
+    siteHeader?: boolean
+    /** Set to false for full-screen displays without toasts (default true). */
+    toasts?: boolean
+    /** Use the piste theme (a sunny ski day, always light), like the dashboard. */
+    piste?: boolean
+    /** Page name, shown in the dashboard breadcrumbs. */
+    title?: string
+  }
 }

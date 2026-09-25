@@ -16,14 +16,13 @@ services:
       timeout: 5s
       retries: 10
 
-  # Mock of Datasektionen's SSO (and Hive), see
+  # Mock of Datasektionen's SSO, see
   # https://github.com/datasektionen/nyckeln-under-dorrmattan
   sso:
     image: ghcr.io/datasektionen/nyckeln-under-dorrmattan:latest
     restart: unless-stopped
     ports:
       - "7003:7003" # sso (OIDC)
-      - "7004:7004" # hive
     volumes:
       - ./dev/nyckeln.yaml:/config.yaml:ro
 

@@ -4,7 +4,6 @@ import {
   CheckIcon,
   EyeIcon,
   LightningIcon,
-  TicketIcon,
 } from "@phosphor-icons/react"
 import {
   useMutation,
@@ -43,6 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { useNow } from "@/hooks/use-now"
+import { activityQuery } from "@/lib/activity/queries"
 import { setTicketRelease } from "@/lib/ticket-release/functions"
 import {
   ticketReleaseHistoryQuery,
@@ -102,6 +102,7 @@ export function TicketReleaseEditor() {
       queryClient.invalidateQueries({
         queryKey: ticketReleaseHistoryQuery.queryKey,
       })
+      queryClient.invalidateQueries({ queryKey: activityQuery.queryKey })
       const next = toSwedishTime(new Date(res.at))
       setDate(next.date)
       setTime(next.time)
@@ -139,10 +140,7 @@ export function TicketReleaseEditor() {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <TicketIcon className="size-4" />
-              Biljettsläpp
-            </CardTitle>
+            <CardTitle>Släpptid</CardTitle>
             <CardDescription>
               Tiden som nedräkningen på startsidan räknar mot.
             </CardDescription>
@@ -164,7 +162,7 @@ export function TicketReleaseEditor() {
 
       <CardContent className="flex flex-col gap-6">
         {/* Current state at a glance. */}
-        <div className="grid grid-cols-2 gap-px border bg-border sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
               ["Dagar", left.days],
@@ -173,11 +171,8 @@ export function TicketReleaseEditor() {
               ["Sekunder", left.seconds],
             ] as const
           ).map(([label, v]) => (
-            <div
-              key={label}
-              className="flex flex-col gap-0.5 bg-card px-3 py-2.5"
-            >
-              <span className="text-[10px] tracking-wider text-muted-foreground uppercase">
+            <div key={label} className="well flex flex-col gap-0.5 px-3 py-2.5">
+              <span className="text-xs font-medium text-muted-foreground">
                 {label}
               </span>
               <span className="text-xl font-semibold tabular-nums">
@@ -239,7 +234,7 @@ export function TicketReleaseEditor() {
             </FieldDescription>
 
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] tracking-wider text-muted-foreground uppercase">
+              <span className="text-xs font-medium text-muted-foreground">
                 Justera
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -278,7 +273,7 @@ export function TicketReleaseEditor() {
 
           {/* Live preview of the draft. */}
           <div className="flex flex-col gap-2">
-            <span className="flex items-center gap-1.5 text-[10px] tracking-wider text-muted-foreground uppercase">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <EyeIcon className="size-3" />
               Förhandsvisning
             </span>

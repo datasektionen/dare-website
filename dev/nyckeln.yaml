@@ -1,4 +1,4 @@
-# Config for the local SSO + Hive mock (nyckeln-under-dorrmattan).
+# Config for the local SSO mock (nyckeln-under-dorrmattan).
 # On the login page, enter the kth_id of one of the users below.
 
 clients:
@@ -11,7 +11,7 @@ clients:
       - http://localhost:3001/auth/callback
 
 users:
-  # Admin: member of dÅrestaben below.
+  # Admin: member of dÅrestaben, which has the `admin` permission below.
   - ug_kth_id: u1turetek
     kth_id: turetek
     email: turetek@kth.se
@@ -19,6 +19,9 @@ users:
     family_name: Teknolog
     year_tag: D-23
     membership: ordinary
+    # Stand-in profile pictures (real SSO gets them from rfinger).
+    picture: https://api.dicebear.com/9.x/notionists/png?seed=turetek&size=256&backgroundColor=c0aede
+    thumbnail: https://api.dicebear.com/9.x/notionists/png?seed=turetek&size=96&backgroundColor=c0aede
   # Regular chapter member.
   - ug_kth_id: u1nollan
     kth_id: nollan
@@ -27,14 +30,12 @@ users:
     family_name: Nollansson
     year_tag: D-26
     membership: ordinary
+    picture: https://api.dicebear.com/9.x/notionists/png?seed=nollan&size=256&backgroundColor=b6e3f4
+    thumbnail: https://api.dicebear.com/9.x/notionists/png?seed=nollan&size=96&backgroundColor=b6e3f4
 
+# Mirrors Hive: dÅrestaben is granted the `admin` permission in the `dare`
+# system, which SSO returns through the `permissions` scope.
 hive:
-  tokens:
-    # Any bearer token is accepted by the mock.
-    - secret: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa
-      permissions:
-        - id: api-list-tagged
-          scope: null
   groups:
     - name: dÅrestaben
       description: dÅre Staff
@@ -42,6 +43,9 @@ hive:
       domain: datasektionen.se
       members:
         - turetek
+      permissions:
+        - id: admin
+          scope: null
 
 # KTH users outside the chapter, allowed in as guests.
 ldap:

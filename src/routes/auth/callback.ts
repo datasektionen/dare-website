@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as client from "openid-client"
-import { env } from "@/env"
-import { isGroupMember } from "@/lib/auth/hive.server"
 import { getOidcConfig, redirectUri } from "@/lib/auth/oidc.server"
+import { hasAdminPermission } from "@/lib/auth/permissions"
 import { getAppSession, getLoginFlowSession } from "@/lib/auth/session.server"
 
 export const Route = createFileRoute("/auth/callback")({
@@ -48,16 +47,6 @@ export const Route = createFileRoute("/auth/callback")({
           return new Response("Login failed.", { status: 400 })
         }
 
-        // Anyone with an SSO account may log in; Hive only decides who is
-        // admin. If Hive is unreachable, log in without admin rights.
-        const isAdmin = await isGroupMember(
-          userinfo.sub,
-          env.ADMIN_GROUP
-        ).catch((error) => {
-          console.error("Hive group lookup failed", error)
-          return false
-        })
-
         const session = await getAppSession()
         await session.update({
           user: {
@@ -68,7 +57,9 @@ export const Route = createFileRoute("/auth/callback")({
                 .filter(Boolean)
                 .join(" "),
             email: userinfo.email ?? "",
-            isAdmin,
+            // Anyone with an SSO account may log in; the `dare:admin` Hive
+            // permission, which SSO includes in userinfo, makes you an admin.
+            isAdmin: hasAdminPermission(userinfo.permissions),
           },
         })
 

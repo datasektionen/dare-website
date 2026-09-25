@@ -11,10 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as BattleRouteImport } from './routes/battle'
+import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
+import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
+import { Route as AuthedDashboardAdminRouteImport } from './routes/_authed/dashboard/_admin'
+import { Route as AuthedDashboardProfilRouteImport } from './routes/_authed/dashboard/profil'
+import { Route as ApiAvatarKthidRouteImport } from './routes/api/avatar/$kthid'
+import { Route as ApiBattleEventsRouteImport } from './routes/api/battle/events'
+import { Route as AuthedDashboardAdminAktivitetRouteImport } from './routes/_authed/dashboard/_admin/aktivitet'
+import { Route as AuthedDashboardAdminBattleRouteImport } from './routes/_authed/dashboard/_admin/battle'
+import { Route as AuthedDashboardAdminBiljettslappRouteImport } from './routes/_authed/dashboard/_admin/biljettslapp'
+import { Route as AuthedDashboardAdminInstallningarRouteImport } from './routes/_authed/dashboard/_admin/installningar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -25,7 +35,12 @@ const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
+const BattleRoute = BattleRouteImport.update({
+  id: '/battle',
+  path: '/battle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthedRoute,
@@ -45,52 +60,166 @@ const AuthLogoutRoute = AuthLogoutRouteImport.update({
   path: '/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardIndexRoute = AuthedDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardAdminRoute = AuthedDashboardAdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardProfilRoute = AuthedDashboardProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const ApiAvatarKthidRoute = ApiAvatarKthidRouteImport.update({
+  id: '/api/avatar/$kthid',
+  path: '/api/avatar/$kthid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBattleEventsRoute = ApiBattleEventsRouteImport.update({
+  id: '/api/battle/events',
+  path: '/api/battle/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedDashboardAdminAktivitetRoute =
+  AuthedDashboardAdminAktivitetRouteImport.update({
+    id: '/aktivitet',
+    path: '/aktivitet',
+    getParentRoute: () => AuthedDashboardAdminRoute,
+  } as any)
+const AuthedDashboardAdminBattleRoute =
+  AuthedDashboardAdminBattleRouteImport.update({
+    id: '/battle',
+    path: '/battle',
+    getParentRoute: () => AuthedDashboardAdminRoute,
+  } as any)
+const AuthedDashboardAdminBiljettslappRoute =
+  AuthedDashboardAdminBiljettslappRouteImport.update({
+    id: '/biljettslapp',
+    path: '/biljettslapp',
+    getParentRoute: () => AuthedDashboardAdminRoute,
+  } as any)
+const AuthedDashboardAdminInstallningarRoute =
+  AuthedDashboardAdminInstallningarRouteImport.update({
+    id: '/installningar',
+    path: '/installningar',
+    getParentRoute: () => AuthedDashboardAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof AuthedDashboardRoute
+  '/battle': typeof BattleRoute
+  '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/dashboard/profil': typeof AuthedDashboardProfilRoute
+  '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
+  '/api/battle/events': typeof ApiBattleEventsRoute
+  '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/dashboard/aktivitet': typeof AuthedDashboardAdminAktivitetRoute
+  '/dashboard/battle': typeof AuthedDashboardAdminBattleRoute
+  '/dashboard/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
+  '/dashboard/installningar': typeof AuthedDashboardAdminInstallningarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof AuthedDashboardRoute
+  '/battle': typeof BattleRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/dashboard': typeof AuthedDashboardIndexRoute
+  '/dashboard/profil': typeof AuthedDashboardProfilRoute
+  '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
+  '/api/battle/events': typeof ApiBattleEventsRoute
+  '/dashboard/aktivitet': typeof AuthedDashboardAdminAktivitetRoute
+  '/dashboard/battle': typeof AuthedDashboardAdminBattleRoute
+  '/dashboard/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
+  '/dashboard/installningar': typeof AuthedDashboardAdminInstallningarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
-  '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/battle': typeof BattleRoute
+  '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/_authed/dashboard/_admin': typeof AuthedDashboardAdminRouteWithChildren
+  '/_authed/dashboard/profil': typeof AuthedDashboardProfilRoute
+  '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
+  '/api/battle/events': typeof ApiBattleEventsRoute
+  '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_authed/dashboard/_admin/aktivitet': typeof AuthedDashboardAdminAktivitetRoute
+  '/_authed/dashboard/_admin/battle': typeof AuthedDashboardAdminBattleRoute
+  '/_authed/dashboard/_admin/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
+  '/_authed/dashboard/_admin/installningar': typeof AuthedDashboardAdminInstallningarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/dashboard' | '/auth/callback' | '/auth/login' | '/auth/logout'
+    | '/'
+    | '/battle'
+    | '/dashboard'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/dashboard/profil'
+    | '/api/avatar/$kthid'
+    | '/api/battle/events'
+    | '/dashboard/'
+    | '/dashboard/aktivitet'
+    | '/dashboard/battle'
+    | '/dashboard/biljettslapp'
+    | '/dashboard/installningar'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/auth/callback' | '/auth/login' | '/auth/logout'
+  to:
+    | '/'
+    | '/battle'
+    | '/auth/callback'
+    | '/auth/login'
+    | '/auth/logout'
+    | '/dashboard'
+    | '/dashboard/profil'
+    | '/api/avatar/$kthid'
+    | '/api/battle/events'
+    | '/dashboard/aktivitet'
+    | '/dashboard/battle'
+    | '/dashboard/biljettslapp'
+    | '/dashboard/installningar'
   id:
     | '__root__'
     | '/'
     | '/_authed'
+    | '/battle'
     | '/_authed/dashboard'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/_authed/dashboard/_admin'
+    | '/_authed/dashboard/profil'
+    | '/api/avatar/$kthid'
+    | '/api/battle/events'
+    | '/_authed/dashboard/'
+    | '/_authed/dashboard/_admin/aktivitet'
+    | '/_authed/dashboard/_admin/battle'
+    | '/_authed/dashboard/_admin/biljettslapp'
+    | '/_authed/dashboard/_admin/installningar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  BattleRoute: typeof BattleRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  ApiAvatarKthidRoute: typeof ApiAvatarKthidRoute
+  ApiBattleEventsRoute: typeof ApiBattleEventsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -109,11 +238,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/battle': {
+      id: '/battle'
+      path: '/battle'
+      fullPath: '/battle'
+      preLoaderRoute: typeof BattleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthedDashboardRouteImport
+      preLoaderRoute: typeof AuthedDashboardRouteRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/auth/callback': {
@@ -137,15 +273,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/dashboard/': {
+      id: '/_authed/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthedDashboardIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/_admin': {
+      id: '/_authed/dashboard/_admin'
+      path: ''
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthedDashboardAdminRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/profil': {
+      id: '/_authed/dashboard/profil'
+      path: '/profil'
+      fullPath: '/dashboard/profil'
+      preLoaderRoute: typeof AuthedDashboardProfilRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/api/avatar/$kthid': {
+      id: '/api/avatar/$kthid'
+      path: '/api/avatar/$kthid'
+      fullPath: '/api/avatar/$kthid'
+      preLoaderRoute: typeof ApiAvatarKthidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/battle/events': {
+      id: '/api/battle/events'
+      path: '/api/battle/events'
+      fullPath: '/api/battle/events'
+      preLoaderRoute: typeof ApiBattleEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/dashboard/_admin/aktivitet': {
+      id: '/_authed/dashboard/_admin/aktivitet'
+      path: '/aktivitet'
+      fullPath: '/dashboard/aktivitet'
+      preLoaderRoute: typeof AuthedDashboardAdminAktivitetRouteImport
+      parentRoute: typeof AuthedDashboardAdminRoute
+    }
+    '/_authed/dashboard/_admin/battle': {
+      id: '/_authed/dashboard/_admin/battle'
+      path: '/battle'
+      fullPath: '/dashboard/battle'
+      preLoaderRoute: typeof AuthedDashboardAdminBattleRouteImport
+      parentRoute: typeof AuthedDashboardAdminRoute
+    }
+    '/_authed/dashboard/_admin/biljettslapp': {
+      id: '/_authed/dashboard/_admin/biljettslapp'
+      path: '/biljettslapp'
+      fullPath: '/dashboard/biljettslapp'
+      preLoaderRoute: typeof AuthedDashboardAdminBiljettslappRouteImport
+      parentRoute: typeof AuthedDashboardAdminRoute
+    }
+    '/_authed/dashboard/_admin/installningar': {
+      id: '/_authed/dashboard/_admin/installningar'
+      path: '/installningar'
+      fullPath: '/dashboard/installningar'
+      preLoaderRoute: typeof AuthedDashboardAdminInstallningarRouteImport
+      parentRoute: typeof AuthedDashboardAdminRoute
+    }
   }
 }
 
+interface AuthedDashboardAdminRouteChildren {
+  AuthedDashboardAdminAktivitetRoute: typeof AuthedDashboardAdminAktivitetRoute
+  AuthedDashboardAdminBattleRoute: typeof AuthedDashboardAdminBattleRoute
+  AuthedDashboardAdminBiljettslappRoute: typeof AuthedDashboardAdminBiljettslappRoute
+  AuthedDashboardAdminInstallningarRoute: typeof AuthedDashboardAdminInstallningarRoute
+}
+
+const AuthedDashboardAdminRouteChildren: AuthedDashboardAdminRouteChildren = {
+  AuthedDashboardAdminAktivitetRoute: AuthedDashboardAdminAktivitetRoute,
+  AuthedDashboardAdminBattleRoute: AuthedDashboardAdminBattleRoute,
+  AuthedDashboardAdminBiljettslappRoute: AuthedDashboardAdminBiljettslappRoute,
+  AuthedDashboardAdminInstallningarRoute:
+    AuthedDashboardAdminInstallningarRoute,
+}
+
+const AuthedDashboardAdminRouteWithChildren =
+  AuthedDashboardAdminRoute._addFileChildren(AuthedDashboardAdminRouteChildren)
+
+interface AuthedDashboardRouteRouteChildren {
+  AuthedDashboardAdminRoute: typeof AuthedDashboardAdminRouteWithChildren
+  AuthedDashboardProfilRoute: typeof AuthedDashboardProfilRoute
+  AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
+}
+
+const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
+  AuthedDashboardAdminRoute: AuthedDashboardAdminRouteWithChildren,
+  AuthedDashboardProfilRoute: AuthedDashboardProfilRoute,
+  AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
+}
+
+const AuthedDashboardRouteRouteWithChildren =
+  AuthedDashboardRouteRoute._addFileChildren(AuthedDashboardRouteRouteChildren)
+
 interface AuthedRouteChildren {
-  AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedDashboardRouteRoute: typeof AuthedDashboardRouteRouteWithChildren
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedDashboardRouteRoute: AuthedDashboardRouteRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =
@@ -154,9 +386,12 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  BattleRoute: BattleRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  ApiAvatarKthidRoute: ApiAvatarKthidRoute,
+  ApiBattleEventsRoute: ApiBattleEventsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

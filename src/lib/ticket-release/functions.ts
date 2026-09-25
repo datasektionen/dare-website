@@ -4,9 +4,11 @@ import { z } from "zod"
 import { db } from "@/db"
 import { siteSettings, ticketReleaseChanges } from "@/db/schema"
 import { adminMiddleware } from "@/lib/auth/functions"
+import { requireFeature } from "@/lib/settings/functions"
 
-/** Used until an admin has set a time. 4 Nov 2026 20:00 Swedish time. */
-export const DEFAULT_TICKET_RELEASE = "2026-11-04T19:00:00.000Z"
+import { DEFAULT_TICKET_RELEASE } from "./constants"
+
+export { DEFAULT_TICKET_RELEASE }
 
 export type TicketRelease = {
   /** ISO timestamp. */
@@ -58,8 +60,8 @@ export const getTicketReleaseHistory = createServerFn({ method: "GET" })
 
 /** Sets when ticket sales open, and logs who changed it. Admins only. */
 export const setTicketRelease = createServerFn({ method: "POST" })
-  .middleware([adminMiddleware])
-  .inputValidator(z.object({ at: z.iso.datetime() }))
+  .middleware([requireFeature("ticketRelease")])
+  .validator(z.object({ at: z.iso.datetime() }))
   .handler(async ({ data, context }): Promise<TicketRelease> => {
     const at = new Date(data.at)
     const now = new Date()

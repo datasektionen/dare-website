@@ -8,6 +8,27 @@
       "when": 1790273237509,
       "tag": "0000_site_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790278717883,
+      "tag": "0001_battle",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790281605012,
+      "tag": "0002_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790282093369,
+      "tag": "0003_ticket_release_feature",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ADD COLUMN "ticket_release_enabled" boolean DEFAULT true NOT NULL;

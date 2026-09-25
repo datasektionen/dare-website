@@ -5,7 +5,7 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Scripts,
-  useRouterState,
+  useMatches,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { lazy, Suspense } from "react"
@@ -51,13 +51,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  // The landing page brings its own full-screen nav.
-  const isLanding = useRouterState({
-    select: (s) => s.location.pathname === "/",
+  // Full-screen pages (landing, /battle) and the dashboard bring their own
+  // chrome.
+  const { siteHeader, toasts, piste } = useMatches({
+    select: (matches) => ({
+      siteHeader: !matches.some((m) => m.staticData.siteHeader === false),
+      toasts: !matches.some((m) => m.staticData.toasts === false),
+      piste: matches.some((m) => m.staticData.piste),
+    }),
+    structuralSharing: true,
   })
 
   return (
-    <html lang="sv" suppressHydrationWarning>
+    <html
+      lang="sv"
+      data-piste={piste ? "" : undefined}
+      suppressHydrationWarning
+    >
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme bootstrap script */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
@@ -65,15 +75,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="min-h-svh bg-background text-foreground antialiased">
         <ThemeProvider>
-          {!isLanding && (
+          {siteHeader && (
             <Suspense>
               <SiteHeader />
             </Suspense>
           )}
           {children}
-          {!isLanding && (
+          {toasts && (
             <Suspense>
-              <Toaster />
+              <Toaster {...(piste ? { theme: "light" as const } : {})} />
             </Suspense>
           )}
         </ThemeProvider>

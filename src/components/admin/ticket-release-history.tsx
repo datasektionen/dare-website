@@ -1,4 +1,3 @@
-import { ClockCounterClockwiseIcon } from "@phosphor-icons/react"
 import { useQuery } from "@tanstack/react-query"
 import {
   Card,
@@ -20,10 +19,7 @@ export function TicketReleaseHistory() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ClockCounterClockwiseIcon className="size-4" />
-          Ändringslogg
-        </CardTitle>
+        <CardTitle>Ändringslogg</CardTitle>
         <CardDescription>
           De senaste ändringarna av biljettsläppet.
         </CardDescription>
@@ -36,7 +32,7 @@ export function TicketReleaseHistory() {
             <Skeleton className="h-9" />
           </div>
         ) : !data?.length ? (
-          <p className="border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+          <p className="well px-3 py-6 text-center text-xs text-muted-foreground">
             Inga ändringar än. Tiden är standardvärdet.
           </p>
         ) : (

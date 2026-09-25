@@ -10,7 +10,8 @@
 @import "@fontsource/instrument-sans/latin-500";
 @import "@fontsource/instrument-sans/latin-600";
 
-@custom-variant dark (&:is(.dark *));
+/* The dashboard's piste theme (`data-piste`) is always light. */
+@custom-variant dark (&:is(.dark *):not([data-piste] *));
 
 @theme inline {
   --font-heading: var(--font-mono);
@@ -80,14 +81,15 @@
   --chart-4: oklch(0.378 0.015 216);
   --chart-5: oklch(0.275 0.011 216.9);
   --radius: 0.625rem;
-  --sidebar: oklch(0.987 0.002 197.1);
-  --sidebar-foreground: oklch(0.148 0.004 228.8);
-  --sidebar-primary: oklch(0.218 0.008 223.9);
-  --sidebar-primary-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-accent: oklch(0.963 0.002 197.1);
-  --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-  --sidebar-border: oklch(0.925 0.005 214.3);
-  --sidebar-ring: oklch(0.723 0.014 214.4);
+  /* The dashboard sidebar is a snowy signpost in both themes. */
+  --sidebar: #eef4fa;
+  --sidebar-foreground: #13213a;
+  --sidebar-primary: #13213a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(19 33 58 / 6%);
+  --sidebar-accent-foreground: #13213a;
+  --sidebar-border: #d6e1ec;
+  --sidebar-ring: #1f6feb;
 }
 
 .dark {
@@ -114,14 +116,15 @@
   --chart-3: oklch(0.45 0.017 213.2);
   --chart-4: oklch(0.378 0.015 216);
   --chart-5: oklch(0.275 0.011 216.9);
-  --sidebar: oklch(0.218 0.008 223.9);
-  --sidebar-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-accent: oklch(0.275 0.011 216.9);
-  --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.56 0.021 213.5);
+  /* The dashboard sidebar is a snowy signpost in both themes. */
+  --sidebar: #eef4fa;
+  --sidebar-foreground: #13213a;
+  --sidebar-primary: #13213a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(19 33 58 / 6%);
+  --sidebar-accent-foreground: #13213a;
+  --sidebar-border: #d6e1ec;
+  --sidebar-ring: #1f6feb;
 }
 
 @layer base {
@@ -158,4 +161,173 @@
   .animate-\[dare-shimmer_5\.72s_linear_infinite\] {
     animation: none;
   }
+}
+
+/* Battle page (/battle). */
+@keyframes battle-word {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(var(--tilt, -8deg));
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25) rotate(var(--tilt, -8deg));
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1) rotate(var(--tilt, -8deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -140%) scale(1.1) rotate(var(--tilt, -8deg));
+  }
+}
+
+@keyframes battle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-20%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-160%) scale(1);
+  }
+}
+
+@keyframes battle-bump {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.22);
+    filter: brightness(1.6);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes battle-kenburns {
+  from {
+    transform: scale(1.04);
+  }
+  to {
+    transform: scale(1.12) translateY(-1%);
+  }
+}
+
+@keyframes battle-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes battle-banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.2) skewX(-10deg);
+    letter-spacing: 0.5em;
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) skewX(-10deg);
+    letter-spacing: 0.04em;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.05) skewX(-10deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[battle-kenburns"] {
+    animation: none;
+  }
+}
+
+/*
+ * Piste: the dashboard's theme, a sunny day on the slopes in Åre. Snow-white
+ * surfaces, navy "sign" ink, and piste colours (green, blue, red, black) as
+ * accents. Set on <html> while on /dashboard, so dialogs, menus and toasts
+ * get it too. It comes after :root and .dark, so it wins over both.
+ */
+[data-piste] {
+  /* biome-ignore lint/complexity/noImportantStyles: beats the inline color-scheme the theme toggle sets on <html> */
+  color-scheme: light !important;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-heading: "Big Shoulders Display", "Instrument Sans", sans-serif;
+  --background: #f5f8fb;
+  --foreground: #13213a;
+  --card: #ffffff;
+  --card-foreground: #13213a;
+  --popover: #ffffff;
+  --popover-foreground: #13213a;
+  --primary: #13213a;
+  --primary-foreground: #ffffff;
+  --secondary: #e9f0f7;
+  --secondary-foreground: #13213a;
+  --muted: #eef3f8;
+  --muted-foreground: #5a6a82;
+  --accent: #e7eef6;
+  --accent-foreground: #13213a;
+  --destructive: #d93b3b;
+  --border: #d9e3ee;
+  --input: #cfdae7;
+  --ring: #1f6feb;
+  /* Piste colours, and the wood of the signposts. */
+  --piste-green: #1f9d55;
+  --piste-blue: #1f6feb;
+  --piste-red: #d93b3b;
+  --piste-black: #13213a;
+  --wood: #8b5a33;
+  --wood-dark: #6b4424;
+}
+[data-piste] body {
+  font-family: var(--font-sans);
+}
+
+/* White cards with a crisp edge and a little lift off the snow. */
+[data-piste] [data-slot="card"] {
+  --card-spacing: --spacing(4);
+  font-size: 0.8125rem;
+  box-shadow:
+    0 1px 0 rgb(19 33 58 / 4%),
+    0 8px 24px -16px rgb(19 33 58 / 25%);
+}
+@media (width >= 40rem) {
+  [data-piste] [data-slot="card"]:not([data-size="sm"]) {
+    --card-spacing: --spacing(5);
+  }
+}
+
+/* Card titles read like small trail signs. */
+[data-piste] [data-slot="card-title"] {
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+
+/* Trail-sign headings: condensed, uppercase, like piste signs. */
+@utility trail-sign {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+/* A quiet inset area inside a card, instead of hard borders. */
+@utility well {
+  background-color: #f4f8fb;
+  box-shadow: inset 0 0 0 1px #e1e9f2;
 }

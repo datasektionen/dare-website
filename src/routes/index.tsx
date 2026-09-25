@@ -7,6 +7,7 @@ import { LandingNav } from "@/components/landing/landing-nav"
 import { Scene } from "@/components/landing/scene"
 import { Snow } from "@/components/landing/snow"
 import { TicketButton } from "@/components/landing/ticket-button"
+import { featuresQuery } from "@/lib/settings/queries"
 import { ticketReleaseQuery } from "@/lib/ticket-release/queries"
 import { formatRelease } from "@/lib/time"
 
@@ -26,6 +27,7 @@ const T = {
 } satisfies Record<Lang, Record<string, string>>
 
 export const Route = createFileRoute("/")({
+  staticData: { siteHeader: false, toasts: false },
   head: () => ({
     meta: [{ title: "dÅre 27" }],
     // The countdown digits are the largest thing on the page.
@@ -41,13 +43,18 @@ export const Route = createFileRoute("/")({
   }),
   // The release time is set by admins on the dashboard.
   loader: ({ context }) =>
-    context.queryClient.ensureQueryData(ticketReleaseQuery),
+    Promise.all([
+      context.queryClient.ensureQueryData(ticketReleaseQuery),
+      context.queryClient.ensureQueryData(featuresQuery),
+    ]),
   component: Landing,
 })
 
 function Landing() {
   const [lang, setLang] = useState<Lang>("sv")
   const { data } = useSuspenseQuery(ticketReleaseQuery)
+  // Switched off in the dashboard once tickets are out: hide the numbers.
+  const showCountdown = useSuspenseQuery(featuresQuery).data.ticketRelease
   const release = useMemo(() => new Date(data.at), [data.at])
   const [released, setReleased] = useState(
     () => Date.now() >= release.getTime()
@@ -58,10 +65,15 @@ function Landing() {
 
   const onZero = useCallback(() => setReleased(true), [])
 
-  // If the time is moved, count down again.
+  // If the time is moved, count down again. Without the countdown (which
+  // calls onZero), flip to "released" on time with a timer instead.
   useEffect(() => {
-    setReleased(Date.now() >= release.getTime())
-  }, [release])
+    const ms = release.getTime() - Date.now()
+    setReleased(ms <= 0)
+    if (showCountdown || ms <= 0 || ms > 2 ** 31 - 1) return
+    const t = setTimeout(() => setReleased(true), ms)
+    return () => clearTimeout(t)
+  }, [release, showCountdown])
 
   // Pop the ticket button in when the countdown reaches zero.
   useEffect(() => {
@@ -105,7 +117,9 @@ function Landing() {
           </span>
           <span className="h-px w-10 bg-white/70" />
         </div>
-        <Countdown target={release} lang={lang} onZero={onZero} />
+        {showCountdown && (
+          <Countdown target={release} lang={lang} onZero={onZero} />
+        )}
         <div className="text-[clamp(15px,1.4vw,19px)] font-medium text-[#f4f8ff] [text-shadow:0_2px_14px_rgba(5,10,35,.65)]">
           {formatRelease(release, lang)}
         </div>
