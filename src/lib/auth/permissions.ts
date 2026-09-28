@@ -1,5 +1,5 @@
 /**
- * The Hive permission that makes someone an admin, i.e. `dare:admin`: the
+ * The Hive permission that makes someone an admin, i.e. `$dare:admin`: the
  * permission `admin` in the Hive system `dare`. The system is the one set on
  * the `dare` client in SSO's admin panel, and SSO only returns permissions
  * within it, so the claim just contains `{ id: "admin" }`.

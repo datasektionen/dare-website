@@ -12,8 +12,8 @@ job "dare" {
       provider = "nomad"
       tags = [
         "traefik.enable=true",
-        # dåre.se in punycode
-        "traefik.http.routers.dare.rule=Host(`xn--dre-ula.se`)",
+        # dåre.datasektionen.se in punycode
+        "traefik.http.routers.dare.rule=Host(`xn--dre-ula.datasektionen.se`)",
         "traefik.http.routers.dare.tls.certresolver=default",
       ]
     }
@@ -35,7 +35,7 @@ OIDC_CLIENT_SECRET={{ .oidc_client_secret }}
 {{ end }}
 PORT={{ env "NOMAD_PORT_http" }}
 NODE_ENV=production
-APP_URL=https://xn--dre-ula.se
+APP_URL=https://xn--dre-ula.datasektionen.se
 OIDC_ISSUER=https://sso.datasektionen.se/op
 OIDC_CLIENT_ID=dare
 SSO_API_URL=http://sso.nomad.dsekt.internal

@@ -24,7 +24,7 @@ you to its login page. Enter one of the users from `dev/nyckeln.yaml`:
 
 | kth_id    | Who                                              |
 | --------- | ------------------------------------------------ |
-| `turetek` | admin (dÅrestaben, which has `dare:admin`)       |
+| `turetek` | admin (dÅrestaben, which has `$dare:admin`)      |
 | `nollan`  | regular chapter member                           |
 | `gaest`   | KTH user outside the chapter (guest)             |
 
@@ -38,7 +38,7 @@ To add users, group members or permissions, edit `dev/nyckeln.yaml` and run
   **encrypted HttpOnly cookie** (`dare_session`, 7 days). `POST /auth/logout`
   clears it. No auth tables live in the database.
 - **Anyone with an SSO account can log in.** Admins are those with the Hive
-  permission `dare:admin` (permission `admin` in the Hive system `dare`).
+  permission `$dare:admin` (permission `admin` in the Hive system `dare`).
   SSO includes it in userinfo through the `permissions` scope, so the app never
   calls Hive itself. It's read at login, so changes in Hive apply at the next
   login. The user is `{ kthid, name, email, isAdmin }`.
@@ -133,7 +133,8 @@ In production, the container applies pending migrations on startup
 Pushing to `main` runs `.github/workflows/deploy.yml`, which uses
 [`datasektionen/nomad-deploy`](https://github.com/datasektionen/nomad-deploy)
 to build the `Dockerfile`, push it to `ghcr.io/datasektionen/dare-website` and
-run `job.nomad.hcl` (job `dare`, namespace `default`, host `dåre.se`).
+run `job.nomad.hcl` (job `dare`, namespace `default`, host
+`dåre.datasektionen.se`).
 
 One-time setup, done by D-Sys:
 
@@ -145,9 +146,11 @@ One-time setup, done by D-Sys:
    to the group `darestaben@datasektionen.se`. Members of its subgroups get it
    too, and only while their membership is active.
 4. **SSO client:** in SSO's admin panel, create client `dare` with redirect URI
-   `https://xn--dre-ula.se/auth/callback` and **Hive system `dare`**. Without the
-   Hive system, SSO rejects logins that request `permissions`. Allow guests if
-   people outside the chapter should be able to log in.
+   `https://xn--dre-ula.datasektionen.se/auth/callback` and **Hive system
+   `dare`**. Without the Hive system, SSO rejects logins that request
+   `permissions`. Allow guests if people outside the chapter should be able to
+   log in.
 5. **Nomad variables** at `nomad/jobs/dare`: `db_password`, `session_secret`
    (`openssl rand -base64 32`), `oidc_client_secret`.
-6. **DNS:** point `dåre.se` (`xn--dre-ula.se`) at the cluster.
+6. **DNS:** point `dåre.datasektionen.se` (`xn--dre-ula.datasektionen.se`) at
+   the cluster.

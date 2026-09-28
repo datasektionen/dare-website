@@ -86,7 +86,7 @@ function ProfilePage() {
               {user.email}
             </Row>
             <Row icon={<KeyIcon />} label="Behörighet">
-              {user.isAdmin ? "dare:admin" : "Ingen"}
+              {user.isAdmin ? "$dare:admin" : "Ingen"}
             </Row>
           </CardContent>
           <CardFooter className="text-xs text-muted-foreground">

@@ -57,7 +57,7 @@ export const Route = createFileRoute("/auth/callback")({
                 .filter(Boolean)
                 .join(" "),
             email: userinfo.email ?? "",
-            // Anyone with an SSO account may log in; the `dare:admin` Hive
+            // Anyone with an SSO account may log in; the `$dare:admin` Hive
             // permission, which SSO includes in userinfo, makes you an admin.
             isAdmin: hasAdminPermission(userinfo.permissions),
           },
