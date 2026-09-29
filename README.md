@@ -83,7 +83,7 @@ few hours. Without `SSO_API_URL`, avatars show initials.
 
 The ticket release time is stored in `site_settings` (a single row), and every
 change is logged in `ticket_release_changes`. Until an admin sets a time,
-4 November 2026 20:00 is used. Times are entered and shown in Swedish time
+2 October 2026 21:00 is used. Times are entered and shown in Swedish time
 (`src/lib/time.ts`).
 
 ## Jäger vs Minttu (`/battle`)
