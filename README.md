@@ -33,10 +33,11 @@ To add users, group members or permissions, edit `dev/nyckeln.yaml` and run
 
 ## Auth
 
-- `/auth/login` starts an OIDC authorization code flow (with PKCE) against
-  `OIDC_ISSUER`. `/auth/callback` fetches userinfo and stores the user in an
-  **encrypted HttpOnly cookie** (`dare_session`, 7 days). `POST /auth/logout`
-  clears it. No auth tables live in the database.
+- `/auth/login` starts an OIDC authorization code flow against `OIDC_ISSUER`,
+  without PKCE (SSO requires PKCE to be off for the client). `/auth/callback`
+  fetches userinfo and stores the user in an **encrypted HttpOnly cookie**
+  (`dare_session`, 7 days). `POST /auth/logout` clears it. No auth tables live
+  in the database.
 - **Anyone with an SSO account can log in.** Admins are those with the Hive
   permission `$dare:admin` (permission `admin` in the Hive system `dare`).
   SSO includes it in userinfo through the `permissions` scope, so the app never

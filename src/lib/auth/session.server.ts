@@ -20,11 +20,10 @@ export function getAppSession() {
 type LoginFlow = {
   state?: string
   nonce?: string
-  codeVerifier?: string
   redirectTo?: string
 }
 
-/** Short-lived cookie holding the OIDC state/nonce/PKCE verifier. */
+/** Short-lived cookie holding the OIDC state and nonce. */
 export function getLoginFlowSession() {
   return getSession<LoginFlow>({
     name: "dare_oidc",

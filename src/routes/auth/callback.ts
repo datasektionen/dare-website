@@ -9,13 +9,11 @@ export const Route = createFileRoute("/auth/callback")({
     handlers: {
       GET: async ({ request }) => {
         const flow = await getLoginFlowSession()
-        const { state, nonce, codeVerifier, redirectTo } = flow.data
+        const { state, nonce, redirectTo } = flow.data
         await flow.clear()
 
-        if (!state || !nonce || !codeVerifier) {
-          return new Response("Login session expired, please try again.", {
-            status: 400,
-          })
+        if (!state || !nonce) {
+          return textResponse("Login session expired, please try again.", 400)
         }
 
         const config = await getOidcConfig()
@@ -29,11 +27,7 @@ export const Route = createFileRoute("/auth/callback")({
           const tokens = await client.authorizationCodeGrant(
             config,
             currentUrl,
-            {
-              expectedState: state,
-              expectedNonce: nonce,
-              pkceCodeVerifier: codeVerifier,
-            }
+            { expectedState: state, expectedNonce: nonce }
           )
           const sub = tokens.claims()?.sub
           if (!sub) throw new Error("ID token is missing `sub`")
@@ -44,7 +38,7 @@ export const Route = createFileRoute("/auth/callback")({
           )
         } catch (error) {
           console.error("OIDC callback failed", error)
-          return new Response("Login failed.", { status: 400 })
+          return textResponse("Login failed.", 400)
         }
 
         const session = await getAppSession()
@@ -71,3 +65,14 @@ export const Route = createFileRoute("/auth/callback")({
     },
   },
 })
+
+/**
+ * Without a Content-Type, the body is sent as application/octet-stream, which
+ * Chrome treats as a failed download and shows ERR_INVALID_RESPONSE instead.
+ */
+function textResponse(body: string, status: number) {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  })
+}
