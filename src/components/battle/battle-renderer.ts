@@ -13,8 +13,15 @@ import type { Side } from "@/lib/battle/types"
 
 /** Where the gloves meet in the fighters image, as fractions of its size. */
 const CLASH = { x: 0.513, y: 0.41 }
-/** How far the fighters travel: at 100% share the clash is this far off centre. */
-const REACH = 0.42
+/**
+ * Each fighter's head, as a fraction of the image width from its own edge.
+ * However far the fight swings, the losing one's head stays at least
+ * `HEAD_MARGIN` of the screen width in from the edge, so you still see them.
+ */
+const HEAD = 0.27
+const HEAD_MARGIN = 0.17
+/** How quickly the push levels off: big leads move it less than close ones. */
+const EASE = 2
 /** The image is 16:9 and covers the viewport. */
 const ASPECT = 16 / 9
 
@@ -159,7 +166,9 @@ export class BattleRenderer {
   }
 
   private targetFor(share: number) {
-    return (share - 0.5) * 2 * REACH * this.box().boxW
+    const { boxW, left } = this.box()
+    const reach = Math.max(0, left + boxW * HEAD - this.W * HEAD_MARGIN)
+    return (reach * Math.tanh(EASE * (share - 0.5) * 2)) / Math.tanh(EASE)
   }
 
   private resize = () => {
