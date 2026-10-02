@@ -30,11 +30,7 @@ export function SiteHeader() {
               </form>
             </>
           ) : (
-            <Button
-              size="sm"
-              nativeButton={false}
-              render={<a href="/auth/login" />}
-            >
+            <Button size="sm" nativeButton={false} render={<a href="/login" />}>
               Logga in
             </Button>
           )}

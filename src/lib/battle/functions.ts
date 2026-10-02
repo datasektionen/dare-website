@@ -6,25 +6,12 @@ import { battle, battleEvents } from "@/db/schema"
 import { requireFeature } from "@/lib/settings/functions"
 import { judgeMiddleware } from "./access"
 import { publish } from "./bus.server"
+import { readBattle, toState } from "./state.server"
 import type { BattleLogEntry, BattleState, BattleUpdate, Side } from "./types"
 
-const EMPTY: BattleState = { jaeger: 0, minttu: 0, version: 0, updatedAt: null }
-
-function toState(row: typeof battle.$inferSelect): BattleState {
-  return {
-    jaeger: row.jaeger,
-    minttu: row.minttu,
-    version: row.version,
-    updatedAt: row.updatedAt.toISOString(),
-  }
-}
-
 /** Current score. Public: the /battle screen shows it. */
-export const getBattle = createServerFn({ method: "GET" }).handler(
-  async (): Promise<BattleState> => {
-    const [row] = await db.select().from(battle)
-    return row ? toState(row) : EMPTY
-  }
+export const getBattle = createServerFn({ method: "GET" }).handler(() =>
+  readBattle()
 )
 
 /** Recent hits, undos and resets, newest first. Admins and judges. */

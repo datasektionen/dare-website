@@ -28,7 +28,10 @@ import { useNow } from "@/hooks/use-now"
 import { battleLogQuery, battleQuery } from "@/lib/battle/queries"
 import { jaegerShare, percentages, SIDE_NAMES } from "@/lib/battle/types"
 import { useBattleActions } from "@/lib/battle/use-battle-actions"
-import { useBattleStream } from "@/lib/battle/use-battle-stream"
+import {
+  useBattleOnline,
+  useBattleStream,
+} from "@/lib/battle/use-battle-stream"
 import { formatRelative } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
@@ -46,6 +49,7 @@ export function BattleControls({ canReset }: { canReset: boolean }) {
   const now = useNow(30_000)
   // Stay live when other admins score.
   useBattleStream()
+  const online = useBattleOnline()
 
   const share = jaegerShare(data)
   const [pj, pm] = percentages(data)
@@ -54,7 +58,15 @@ export function BattleControls({ canReset }: { canReset: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle>Ställning</CardTitle>
-        <CardDescription>Uppdateras live när någon ger poäng.</CardDescription>
+        <CardDescription className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              online ? "bg-emerald-500" : "animate-pulse bg-amber-500"
+            )}
+          />
+          {online ? "Live" : "Återansluter…"}
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-5">
@@ -130,15 +142,15 @@ export function BattleControls({ canReset }: { canReset: boolean }) {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-          <p className="text-xs text-muted-foreground">
-            Tips: tryck{" "}
-            <kbd className="bg-white px-1.5 py-0.5 font-medium text-foreground ring-1 ring-border">
-              F
-            </kbd>{" "}
-            på /battle för helskärm.
-          </p>
-          {canReset && (
+        {canReset && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+            <p className="text-xs text-muted-foreground">
+              Tips: tryck{" "}
+              <kbd className="bg-white px-1.5 py-0.5 font-medium text-foreground ring-1 ring-border">
+                F
+              </kbd>{" "}
+              på /battle för helskärm.
+            </p>
             <Button
               variant="ghost"
               size="sm"
@@ -148,8 +160,8 @@ export function BattleControls({ canReset }: { canReset: boolean }) {
               <ArrowCounterClockwiseIcon data-icon="inline-start" />
               Nollställ
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
         {!!log?.length && (
           <div className="flex flex-col gap-1.5">

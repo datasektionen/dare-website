@@ -371,77 +371,83 @@ function GamePage() {
       {phase !== "playing" && (
         // Scrolls when it doesn't fit, e.g. on a phone held sideways.
         <div className="absolute inset-0 z-20 touch-manipulation overflow-y-auto overscroll-contain bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(5,8,24,.72)_0%,rgba(5,8,24,.35)_60%,rgba(5,8,24,0)_100%)]">
-          <div className="flex min-h-full flex-col items-center justify-center gap-[clamp(14px,2.4vh,26px)] px-5 pt-[clamp(84px,12vh,120px)] pb-8 text-center">
+          <div className="flex min-h-full flex-col items-center justify-center gap-[clamp(18px,3vh,32px)] px-5 pt-[clamp(84px,12vh,120px)] pb-8 text-center [@media(max-height:500px)]:pt-[76px] [@media(max-height:500px)]:pb-4">
             {phase === "ready" ? (
               <>
-                <Kicker>{L.presents}</Kicker>
-                <h1
-                  className={cn(
-                    DISPLAY,
-                    ICE,
-                    "text-[clamp(44px,13.2vw,230px)] leading-[.85] uppercase [@media(max-height:500px)]:text-[64px]"
-                  )}
-                >
-                  Puckopist
-                </h1>
-                {showBoard ? (
-                  <Leaderboard L={L} mine={null} admin={admin} />
-                ) : (
-                  <>
+                <div className="flex flex-col items-center gap-[clamp(10px,1.8vh,18px)]">
+                  <h1
+                    className={cn(
+                      DISPLAY,
+                      ICE,
+                      "text-[clamp(56px,13.2vw,230px)] leading-[.85] uppercase [@media(max-height:500px)]:text-[64px]"
+                    )}
+                  >
+                    Puckopist
+                  </h1>
+                  {!showBoard && (
                     <p
                       className={cn(
-                        "max-w-[34ch] text-[clamp(15px,1.4vw,19px)] font-medium text-[#f4f8ff]",
+                        "max-w-[34ch] text-[clamp(16px,1.4vw,19px)] font-medium text-[#f4f8ff]",
                         SHADOW
                       )}
                     >
                       {L.tagline}
                     </p>
-                    <ul
+                  )}
+                </div>
+                {showBoard && <Leaderboard L={L} mine={null} admin={admin} />}
+                <div className="flex flex-col items-center gap-4">
+                  <StartButton label={L.start} onClick={start} />
+                  {!showBoard && <Hint>{touch ? L.hintTouch : L.hint}</Hint>}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowBoard((s) => !s)}
                       className={cn(
                         MONO,
-                        "flex flex-col gap-1.5 text-[clamp(10px,1vw,13px)] tracking-[.18em] text-[#cfe2ff]",
-                        SHADOW
+                        "cursor-pointer rounded-full border border-white/25 bg-white/10 px-4 py-2.5 text-[11px] tracking-[.2em] text-white backdrop-blur-[10px] transition-colors hover:bg-white/20"
                       )}
                     >
-                      <li>{touch ? L.jumpTouch : L.jump}</li>
-                      <li>{touch ? L.flipTouch : L.flip}</li>
-                      <li>{L.land}</li>
-                      <li>{L.comboHint}</li>
-                    </ul>
-                  </>
-                )}
+                      {showBoard ? L.back : L.leaderboard}
+                    </button>
+                    {best > 0 && <Hint>{`${L.best} ${best}`}</Hint>}
+                  </div>
+                </div>
               </>
             ) : (
               result && (
-                <div className="flex w-full max-w-4xl flex-col items-center gap-[clamp(18px,3vh,32px)] md:flex-row md:items-center md:justify-center md:gap-14">
-                  <div className="flex w-full max-w-sm flex-col items-center gap-[clamp(12px,2vh,20px)]">
-                    <Kicker>{L.crash}</Kicker>
+                <div className="flex w-full max-w-4xl flex-col items-center gap-[clamp(24px,4vh,40px)] md:flex-row md:items-center md:justify-center md:gap-14">
+                  {/* Score and the way back on the piste first, so a phone
+                      never has to scroll past the leaderboard to ride again. */}
+                  <div className="flex w-full max-w-sm flex-col items-center gap-[clamp(10px,2.2vh,22px)]">
                     <div className="flex flex-col items-center gap-2">
+                      {result.record && (
+                        <div
+                          className={cn(
+                            MONO,
+                            "mb-1 rounded-full bg-white px-4 py-1.5 text-xs font-medium tracking-[.2em] text-[#c92c6d] shadow-[0_8px_30px_rgba(232,61,132,.45)]"
+                          )}
+                        >
+                          {L.newBest}
+                        </div>
+                      )}
                       <div
                         className={cn(
                           DISPLAY,
                           ICE,
-                          "text-[clamp(72px,13vw,200px)] leading-[.85] tabular-nums [@media(max-height:500px)]:text-[72px]"
+                          "text-[clamp(80px,13vw,200px)] leading-[.85] tabular-nums [@media(max-height:500px)]:text-[60px]"
                         )}
                       >
                         {result.score}
                       </div>
                       <Label>{L.score}</Label>
                     </div>
-                    <div className="flex gap-[clamp(28px,5vw,64px)]">
+                    {/* Left out when it would push "ride again" off a phone
+                        held sideways. */}
+                    <div className="flex gap-[clamp(28px,5vw,64px)] [@media(max-height:500px)]:hidden">
                       <Stat value={result.cans} label={L.cans} />
                       <Stat value={result.distance} label={L.metres} />
                     </div>
-                    {result.record && (
-                      <div
-                        className={cn(
-                          MONO,
-                          "rounded-full bg-white px-4 py-1.5 text-xs font-medium tracking-[.2em] text-[#c92c6d] shadow-[0_8px_30px_rgba(232,61,132,.45)]"
-                        )}
-                      >
-                        {L.newBest}
-                      </div>
-                    )}
                     {mine || held ? (
                       <p
                         role="status"
@@ -478,40 +484,17 @@ function GamePage() {
                         </p>
                       ))
                     )}
+                    <div className="flex flex-col items-center gap-3 pt-1">
+                      <StartButton label={L.again} onClick={start} />
+                      {!result.record && best > 0 && (
+                        <Hint>{`${L.best} ${best}`}</Hint>
+                      )}
+                    </div>
                   </div>
                   <Leaderboard L={L} mine={mine} admin={admin} />
                 </div>
               )
             )}
-            <div className="flex flex-col items-center gap-3 pt-2">
-              <button type="button" onClick={start} className={pillClass}>
-                <span>{phase === "ready" ? L.start : L.again}</span>
-                <PillArrow />
-              </button>
-              <span
-                className={cn(
-                  MONO,
-                  "text-[11px] tracking-[.2em] text-white/70",
-                  SHADOW
-                )}
-              >
-                {!touch && L.orSpace}
-                {!touch && best > 0 && " · "}
-                {best > 0 && `${L.best} ${best}`}
-              </span>
-              {phase === "ready" && (
-                <button
-                  type="button"
-                  onClick={() => setShowBoard((s) => !s)}
-                  className={cn(
-                    MONO,
-                    "cursor-pointer rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[11px] tracking-[.2em] text-white backdrop-blur-[10px] transition-colors hover:bg-white/20"
-                  )}
-                >
-                  {showBoard ? L.back : L.leaderboard}
-                </button>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -519,19 +502,29 @@ function GamePage() {
   )
 }
 
-function Kicker({ children }: { children: React.ReactNode }) {
+function StartButton({
+  label,
+  onClick,
+}: {
+  label: string
+  onClick: () => void
+}) {
   return (
-    <div
-      className={cn(
-        MONO,
-        "flex items-center gap-4 text-[clamp(11px,1.1vw,14px)] tracking-[.34em] text-[#eef5ff]",
-        SHADOW
-      )}
+    <button type="button" onClick={onClick} className={pillClass}>
+      <span>{label}</span>
+      <PillArrow />
+    </button>
+  )
+}
+
+/** A quiet line of small print, like the controls. */
+function Hint({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(MONO, "text-[11px] tracking-[.2em] text-white/70", SHADOW)}
     >
-      <span className="h-px w-10 bg-white/70" />
-      <span className="whitespace-nowrap">{children}</span>
-      <span className="h-px w-10 bg-white/70" />
-    </div>
+      {children}
+    </span>
   )
 }
 

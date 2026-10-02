@@ -48,7 +48,9 @@ To add users, group members or permissions, edit `dev/nyckeln.yaml` and run
 - **Judges** may score Jäger vs Minttu and nothing else. Admins add their KTH
   ids on the Jäger vs Minttu page (`battle_judges`, changes logged in
   `battle_judge_changes`); `isJudge` is looked up on every request, so it
-  applies right away. `/domare` logs a judge in and goes straight to scoring.
+  applies right away. Judges can log in with `/login` like everyone else
+  (the overview sends them on to scoring), or with `/domare`, which goes
+  straight there.
 - **Pages:** put protected routes under `src/routes/_authed/`. `context.user`
   is non-null there. Gate admin-only content on `context.user.isAdmin` (see
   `_authed/dashboard.tsx`).
@@ -135,6 +137,12 @@ and an impact word. The page has no controls: press **F** for fullscreen.
 - Updates reach every open screen instantly through server-sent events
   (`/api/battle/events`), fanned out between app instances with Postgres
   `LISTEN`/`NOTIFY`. Screens also poll every 15 s as a fallback.
+- The screens look after themselves, so nobody has to reload them during
+  the pub: the stream sends the current score on every (re)connect and pings
+  every 15 s. The browser reopens it when pings stop or after an HTTP error
+  (like a 502 during a deploy), backing off up to 15 s. If the page itself
+  couldn't load, it retries every 5 s. While the connection is down, a small
+  **Återansluter…** shows in a corner. See `src/lib/battle/use-battle-stream.ts`.
 
 ## Scripts
 

@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { subscribe } from "@/lib/battle/bus.server"
+import { readBattle } from "@/lib/battle/state.server"
 import type { BattleUpdate } from "@/lib/battle/types"
 
-/** Server-sent events: every battle update, as it happens. */
+/**
+ * Server-sent events: the current score, then every battle update as it
+ * happens, and a `ping` event every 15 s so clients can tell a dead
+ * connection from a quiet one (see `use-battle-stream.ts`).
+ */
 export const Route = createFileRoute("/api/battle/events")({
   server: {
     handlers: {
@@ -18,12 +23,23 @@ export const Route = createFileRoute("/api/battle/events")({
                 cleanup()
               }
             }
-            send("retry: 2000\n\n")
-            const unsubscribe = subscribe((update: BattleUpdate) =>
+            const sendUpdate = (update: BattleUpdate) =>
               send(`data: ${JSON.stringify(update)}\n\n`)
+            send("retry: 2000\n\n")
+            // Subscribed first, so nothing falls between the two. Clients
+            // drop whichever arrives out of order by `version`.
+            const unsubscribe = subscribe(sendUpdate)
+            // Catches up a client that was offline. If the database is down,
+            // updates still flow and the client's polling fills in later.
+            readBattle().then(
+              (state) => sendUpdate({ ...state, event: null }),
+              (error) => console.error("Reading the battle failed", error)
             )
-            // Keeps proxies from closing an idle connection.
-            const heartbeat = setInterval(() => send(": ping\n\n"), 20_000)
+            // Also keeps proxies from closing an idle connection.
+            const heartbeat = setInterval(
+              () => send("event: ping\ndata: {}\n\n"),
+              15_000
+            )
             cleanup = () => {
               clearInterval(heartbeat)
               unsubscribe()

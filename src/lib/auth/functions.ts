@@ -10,8 +10,11 @@ export const getUser = createServerFn({ method: "GET" }).handler(
     const session = await getAppSession()
     const user = session.data.user
     if (!user) return null
-    // Admins can do everything a judge can anyway.
-    return { ...user, isJudge: !user.isAdmin && (await isJudge(user.kthid)) }
+    // Admins can do everything a judge can anyway. If the database is down,
+    // pages still load (scoring is refused on the server anyway).
+    const judge =
+      !user.isAdmin && (await isJudge(user.kthid).catch(() => false))
+    return { ...user, isJudge: judge }
   }
 )
 

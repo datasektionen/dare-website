@@ -4,6 +4,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { BattleHud } from "@/components/battle/battle-hud"
 import { BattleRenderer } from "@/components/battle/battle-renderer"
+import { OfflineBadge, RetryScreen } from "@/components/battle/live-status"
 import { battleQuery } from "@/lib/battle/queries"
 import {
   type BattleUpdate,
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/battle")({
   },
   loader: ({ context }) => context.queryClient.ensureQueryData(battleQuery),
   component: BattlePage,
+  errorComponent: RetryScreen,
 })
 
 const WORDS = [
@@ -115,9 +117,13 @@ function BattlePage() {
   const onUpdate = useCallback(
     (update: BattleUpdate) => {
       const renderer = rendererRef.current
-      if (!update.event || !renderer) return
-      const { kind, side } = update.event
       const nowLeader = leader(update)
+      // A catch-up after a reconnect: no effects for what was missed.
+      if (!update.event || !renderer) {
+        previousLeader.current = nowLeader
+        return
+      }
+      const { kind, side } = update.event
 
       if (kind === "reset") {
         renderer.reset()
@@ -251,6 +257,7 @@ function BattlePage() {
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,.65))]" />
 
       <BattleHud state={data} combo={combo} />
+      <OfflineBadge className="bottom-[2vh] left-1/2 -translate-x-1/2" />
 
       {/* Impact words at the clash point. */}
       <div className="pointer-events-none absolute inset-0 z-30">

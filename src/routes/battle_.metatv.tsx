@@ -2,6 +2,7 @@ import funFont from "@fontsource/lilita-one/files/lilita-one-latin-400-normal.wo
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { DressedBottle, type Sticker } from "@/components/battle/dressed-bottle"
+import { OfflineBadge, RetryScreen } from "@/components/battle/live-status"
 import { SIDE_BAR } from "@/components/battle/side-styles"
 import { battleQuery } from "@/lib/battle/queries"
 import { jaegerShare, leader, type Side } from "@/lib/battle/types"
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/battle_/metatv")({
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(battleQuery),
   component: MetaTvSlide,
+  errorComponent: RetryScreen,
 })
 
 const JAEGER = "#f26a1b"
@@ -188,6 +190,7 @@ function MetaTvSlide() {
           right
         />
       </div>
+      <OfflineBadge className="top-[2vh] right-[2vh]" />
     </div>
   )
 }

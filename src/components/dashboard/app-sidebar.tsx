@@ -159,10 +159,13 @@ export function AppSidebar({ user }: { user: User }) {
   const { data: features } = useSuspenseQuery(featuresQuery)
   const { setOpenMobile } = useSidebar()
   // Admin-only pages for admins, scoring for judges too; switched-off
-  // features are hidden entirely.
+  // features are hidden entirely. Judges are sent from the overview to
+  // scoring, so they don't get a link to it.
+  const judging = user.isJudge && features.battle
   const visible = (items: NavItem[]) =>
     items.filter(
       (i) =>
+        !(judging && i.to === "/dashboard") &&
         (!i.admin || user.isAdmin) &&
         (!i.judge || user.isAdmin || user.isJudge) &&
         (!i.feature || features[i.feature])

@@ -1,4 +1,5 @@
 import { client } from "@/db"
+import { readBattle } from "./state.server"
 import type { BattleUpdate } from "./types"
 
 /*
@@ -38,8 +39,25 @@ globalForBus.battleOnNotify = (payload) => {
 }
 
 function ensureListening() {
+  let first = true
   globalForBus.battleListening ??= client
-    .listen(CHANNEL, (payload) => globalForBus.battleOnNotify?.(payload))
+    .listen(
+      CHANNEL,
+      (payload) => globalForBus.battleOnNotify?.(payload),
+      // Runs again whenever postgres.js re-listens after losing the
+      // connection: send everyone the score, in case other instances
+      // scored in the meantime.
+      () => {
+        if (first) {
+          first = false
+          return
+        }
+        readBattle().then(
+          (state) => emit({ ...state, event: null }),
+          () => {}
+        )
+      }
+    )
     .catch((error) => {
       // Local delivery and the clients' polling still work without it.
       console.error("LISTEN battle failed", error)

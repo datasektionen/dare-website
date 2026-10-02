@@ -195,14 +195,8 @@ export function SaveScore({
         save.mutate(clean)
       }}
     >
-      <label
-        htmlFor="puckopist-name"
-        className={cn(
-          MONO,
-          "text-[11px] tracking-[.2em] text-white/80",
-          SHADOW
-        )}
-      >
+      {/* The field and button say enough on screen. */}
+      <label htmlFor="puckopist-name" className="sr-only">
         {L.saveTitle}
       </label>
       <div className="flex gap-2">
@@ -212,6 +206,7 @@ export function SaveScore({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={L.name}
+          aria-describedby={runId ? undefined : "puckopist-checking"}
           maxLength={NAME_MAX}
           autoComplete="nickname"
           enterKeyHint="send"
@@ -221,11 +216,16 @@ export function SaveScore({
         <button
           type="submit"
           disabled={!clean || !runId || save.isPending}
-          className="h-12 shrink-0 cursor-pointer rounded-full bg-[#e83d84] px-6 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_8px_30px_rgba(232,61,132,.4)] transition-colors hover:bg-[#f0529a] disabled:cursor-default disabled:opacity-50"
+          className="h-12 shrink-0 cursor-pointer rounded-full bg-white px-6 font-semibold text-[#0b1233] transition-colors hover:bg-[#eef5ff] disabled:cursor-default disabled:opacity-50"
         >
-          {!runId ? L.checking : save.isPending ? L.saving : L.save}
+          {save.isPending ? L.saving : L.save}
         </button>
       </div>
+      {!runId && (
+        <span id="puckopist-checking" className="sr-only">
+          {L.checking}
+        </span>
+      )}
       {save.isError && (
         <p role="alert" className="text-sm text-[#ffb3cf]">
           {/* The server's reason when it gave one, e.g. a closed leaderboard. */}
