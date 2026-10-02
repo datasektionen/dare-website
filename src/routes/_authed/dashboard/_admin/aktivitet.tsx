@@ -18,7 +18,8 @@ const FILTERS = {
   },
   biljettslapp: {
     label: "Biljettsläpp",
-    match: (a: Activity) => a.type === "ticket-release",
+    match: (a: Activity) =>
+      a.type === "ticket-release" || a.type === "ticket-link",
   },
 } as const
 type Filter = keyof typeof FILTERS

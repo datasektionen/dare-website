@@ -1,6 +1,7 @@
 import { ArrowRightIcon, ArrowUpRightIcon } from "@phosphor-icons/react"
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { SIDE_BAR } from "@/components/battle/side-styles"
 import { ActivityList } from "@/components/dashboard/activity-list"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { SectionHeading } from "@/components/dashboard/section"
@@ -9,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useNow } from "@/hooks/use-now"
 import { activityQuery } from "@/lib/activity/queries"
 import { battleQuery } from "@/lib/battle/queries"
-import { jaegerShare, leader, SIDE_NAMES, type Side } from "@/lib/battle/types"
+import { jaegerShare, leader, SIDE_NAMES } from "@/lib/battle/types"
 import { featuresQuery } from "@/lib/settings/queries"
 import { ticketReleaseQuery } from "@/lib/ticket-release/queries"
 import { splitDuration, TIME_ZONE } from "@/lib/time"
@@ -124,11 +125,6 @@ function LiftPass({ editable }: { editable: boolean }) {
   )
 }
 
-const SIDE_COLOR: Record<Side, string> = {
-  jaeger: "bg-[linear-gradient(90deg,#ff3d2e,#ff7a1a)]",
-  minttu: "bg-[linear-gradient(90deg,#2a7bff,#3dd6ff)]",
-}
-
 /** The score as two rows; scoring happens on the Jäger vs Minttu page. */
 function Battle() {
   const { data } = useSuspenseQuery(battleQuery)
@@ -169,7 +165,7 @@ function Battle() {
               <span
                 className={cn(
                   "block h-full transition-[width] duration-300",
-                  SIDE_COLOR[r.side]
+                  SIDE_BAR[r.side]
                 )}
                 style={{ width: `${r.share * 100}%` }}
               />

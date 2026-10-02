@@ -7,8 +7,7 @@ clients:
     # Also let in KTH users who aren't chapter members (from `ldap` below).
     allows_guests: true
     redirect_uris:
-      - http://localhost:3000/auth/callback
-      - http://localhost:3001/auth/callback
+      - http://localhost:2027/auth/callback
 
 users:
   # Admin: member of dÅrestaben, which has the `admin` permission below.

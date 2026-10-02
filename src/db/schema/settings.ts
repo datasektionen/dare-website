@@ -25,6 +25,13 @@ export const siteSettings = pgTable(
      * can be switched off (the landing page then hides the numbers).
      */
     ticketReleaseEnabled: boolean().notNull().default(true),
+    /**
+     * The ticket sign-up form. Secret: only handed out (as the buy button and
+     * QR code) once the release time has passed.
+     */
+    ticketUrl: text(),
+    ticketUrlUpdatedAt: timestamp({ withTimezone: true }),
+    ticketUrlUpdatedBy: text(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** kthid of the admin who last changed the settings. */
     updatedBy: text(),
@@ -36,6 +43,15 @@ export const siteSettings = pgTable(
 export const ticketReleaseChanges = pgTable("ticket_release_changes", {
   id: serial().primaryKey(),
   releaseAt: timestamp({ withTimezone: true }).notNull(),
+  changedBy: text().notNull(),
+  changedByName: text().notNull(),
+  changedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+})
+
+/** Audit log of every change to the ticket link. `url` null means removed. */
+export const ticketUrlChanges = pgTable("ticket_url_changes", {
+  id: serial().primaryKey(),
+  url: text(),
   changedBy: text().notNull(),
   changedByName: text().notNull(),
   changedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

@@ -1,11 +1,13 @@
 import { ArrowSquareOutIcon } from "@phosphor-icons/react"
 import { createFileRoute, Link, redirect } from "@tanstack/react-router"
+import { TicketLinkEditor } from "@/components/admin/ticket-link-editor"
 import { TicketReleaseEditor } from "@/components/admin/ticket-release-editor"
 import { TicketReleaseHistory } from "@/components/admin/ticket-release-history"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Button } from "@/components/ui/button"
 import { featuresQuery } from "@/lib/settings/queries"
 import {
+  ticketLinkAdminQuery,
   ticketReleaseHistoryQuery,
   ticketReleaseQuery,
 } from "@/lib/ticket-release/queries"
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_authed/dashboard/_admin/biljettslapp")({
     Promise.all([
       context.queryClient.ensureQueryData(ticketReleaseQuery),
       context.queryClient.ensureQueryData(ticketReleaseHistoryQuery),
+      context.queryClient.ensureQueryData(ticketLinkAdminQuery),
     ]),
   component: TicketReleasePage,
 })
@@ -31,7 +34,7 @@ function TicketReleasePage() {
     <>
       <PageHeader
         title="Biljettsläpp"
-        description="När biljetterna släpps. Startsidan räknar ner hit."
+        description="När biljetterna släpps och vart köpknappen leder. Startsidan räknar ner hit."
         actions={
           <Button
             variant="outline"
@@ -44,8 +47,11 @@ function TicketReleasePage() {
           </Button>
         }
       />
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-        <TicketReleaseEditor />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <TicketReleaseEditor />
+          <TicketLinkEditor />
+        </div>
         <TicketReleaseHistory />
       </div>
     </>

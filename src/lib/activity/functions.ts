@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start"
 import { count, desc, eq, gt, max, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { battleEvents, featureChanges, ticketReleaseChanges } from "@/db/schema"
+import {
+  battleEvents,
+  featureChanges,
+  ticketReleaseChanges,
+  ticketUrlChanges,
+} from "@/db/schema"
 import { adminMiddleware } from "@/lib/auth/functions"
 import type { BattleEventKind, Side } from "@/lib/battle/types"
 import { type Feature, readFeatures } from "@/lib/settings/features.server"
@@ -25,6 +30,15 @@ export type Activity =
       releaseAt: string
     }
   | {
+      type: "ticket-link"
+      id: string
+      at: string
+      by: string
+      byName: string
+      /** null when the link was removed. */
+      url: string | null
+    }
+  | {
       type: "feature"
       id: string
       at: string
@@ -42,7 +56,7 @@ export const getActivity = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
   .handler(async (): Promise<Activity[]> => {
     const features = await readFeatures()
-    const [battle, releases, toggles] = await Promise.all([
+    const [battle, releases, links, toggles] = await Promise.all([
       features.battle
         ? db
             .select()
@@ -57,6 +71,13 @@ export const getActivity = createServerFn({ method: "GET" })
             .from(ticketReleaseChanges)
             .orderBy(desc(ticketReleaseChanges.id))
             .limit(50),
+      !features.ticketRelease
+        ? []
+        : db
+            .select()
+            .from(ticketUrlChanges)
+            .orderBy(desc(ticketUrlChanges.id))
+            .limit(20),
       db
         .select()
         .from(featureChanges)
@@ -80,6 +101,14 @@ export const getActivity = createServerFn({ method: "GET" })
         by: c.changedBy,
         byName: c.changedByName,
         releaseAt: c.releaseAt.toISOString(),
+      })),
+      ...links.map((c) => ({
+        type: "ticket-link" as const,
+        id: `l${c.id}`,
+        at: c.changedAt.toISOString(),
+        by: c.changedBy,
+        byName: c.changedByName,
+        url: c.url,
       })),
       ...toggles.map((f) => ({
         type: "feature" as const,

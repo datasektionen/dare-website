@@ -13,6 +13,8 @@ function describe(a: Activity) {
     return `${a.enabled ? "slog på" : "stängde av"} ${FEATURE_NAMES[a.feature]}`
   if (a.type === "ticket-release")
     return `satte biljettsläppet till ${formatShort(new Date(a.releaseAt))}`
+  if (a.type === "ticket-link")
+    return a.url ? "bytte biljettlänken" : "tog bort biljettlänken"
   if (a.kind === "reset") return "startade en ny rond"
   const side = a.side ? SIDE_NAMES[a.side] : ""
   return a.kind === "hit" ? `gav ${side} +1` : `tog bort 1 från ${side}`
@@ -28,7 +30,7 @@ function Who({ a }: { a: Activity }) {
     <span className="relative shrink-0">
       <UserAvatar kthid={a.by} name={a.byName} size="sm" className="size-7" />
       <span className="absolute -right-1 -bottom-1 flex size-3.5 items-center justify-center bg-background">
-        {a.type === "ticket-release" ? (
+        {a.type === "ticket-release" || a.type === "ticket-link" ? (
           <PisteMark piste="red" className="size-1.5" />
         ) : a.type === "feature" ? (
           <span className="size-1.5 bg-muted-foreground" />

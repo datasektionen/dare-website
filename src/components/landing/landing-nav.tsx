@@ -35,7 +35,7 @@ export function LandingNav({
             onClick={() => onLang(l)}
             aria-pressed={lang === l}
             className={cn(
-              "cursor-pointer rounded-full border-0 px-[11px] py-1.5 font-['IBM_Plex_Mono',monospace] text-xs font-medium tracking-[.08em] uppercase transition-colors duration-200",
+              "cursor-pointer rounded-full border-0 px-[11px] py-1.5 pointer-coarse:px-3.5 pointer-coarse:py-2.5 font-['IBM_Plex_Mono',monospace] text-xs font-medium tracking-[.08em] uppercase transition-colors duration-200",
               lang === l
                 ? "bg-white text-[#0b1233]"
                 : "bg-transparent text-white/80"

@@ -12,7 +12,7 @@ bun install
 cp .env.example .env     # then set SESSION_SECRET (openssl rand -base64 32)
 bun run services:up      # Postgres + SSO mock (docker compose)
 bun run db:migrate
-bun run dev              # http://localhost:3000
+bun run dev              # http://localhost:2027
 ```
 
 ### Logging in locally
@@ -34,7 +34,9 @@ To add users, group members or permissions, edit `dev/nyckeln.yaml` and run
 ## Auth
 
 - `/auth/login` starts an OIDC authorization code flow against `OIDC_ISSUER`,
-  without PKCE (SSO requires PKCE to be off for the client). `/auth/callback`
+  without PKCE (SSO requires PKCE to be off for the client). `/login` is a
+  friendlier address for it that lands on `?redirect=` (default
+  `/dashboard`), or goes straight there if already signed in. `/auth/callback`
   fetches userinfo and stores the user in an **encrypted HttpOnly cookie**
   (`dare_session`, 7 days). `POST /auth/logout` clears it. No auth tables live
   in the database.
@@ -112,7 +114,7 @@ and an impact word. The page has no controls: press **F** for fullscreen.
 
 | Script                        | What it does                                    |
 | ----------------------------- | ----------------------------------------------- |
-| `dev`                         | Vite dev server on port 3000                    |
+| `dev`                         | Vite dev server on port 2027 (fails if taken)   |
 | `build` / `start`             | Production build to `.output/`, serve with Bun  |
 | `test` / `test:watch`         | Vitest                                          |
 | `check`                       | Biome lint + format (writes fixes)              |

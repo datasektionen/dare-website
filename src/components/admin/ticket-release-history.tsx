@@ -8,10 +8,20 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNow } from "@/hooks/use-now"
+import type { TicketReleaseChange } from "@/lib/ticket-release/functions"
 import { ticketReleaseHistoryQuery } from "@/lib/ticket-release/queries"
 import { formatRelative, formatShort } from "@/lib/time"
 
-/** Who changed the release time, and when. */
+/** A link without `https://`, to fit the log. */
+const shortUrl = (url: string) => url.replace(/^https?:\/\//, "")
+
+/** What an entry changed, as its headline. */
+function headline(c: TicketReleaseChange) {
+  if (c.kind === "time") return formatShort(new Date(c.releaseAt))
+  return c.url ? `Länk: ${shortUrl(c.url)}` : "Länken togs bort"
+}
+
+/** Who changed the release time or ticket link, and when. */
 export function TicketReleaseHistory() {
   const { data, isPending } = useQuery(ticketReleaseHistoryQuery)
   const now = useNow(30_000)
@@ -21,7 +31,7 @@ export function TicketReleaseHistory() {
       <CardHeader>
         <CardTitle>Ändringslogg</CardTitle>
         <CardDescription>
-          De senaste ändringarna av biljettsläppet.
+          De senaste ändringarna av släpptid och biljettlänk.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -33,17 +43,21 @@ export function TicketReleaseHistory() {
           </div>
         ) : !data?.length ? (
           <p className="well px-3 py-6 text-center text-xs text-muted-foreground">
-            Inga ändringar än. Tiden är standardvärdet.
+            Inga ändringar än. Tiden är standardvärdet och ingen länk är satt.
           </p>
         ) : (
           <ol className="relative flex flex-col gap-4 border-l pl-4">
             {data.map((c, i) => (
-              <li key={c.id} className="relative">
+              <li key={c.id} className="relative min-w-0">
+                {/* Round for the time, square for the link. */}
                 <span
-                  className={`absolute top-1 -left-[21px] size-2.5 rounded-full ring-4 ring-card ${i === 0 ? "bg-primary" : "bg-muted-foreground/40"}`}
+                  className={`absolute top-1 -left-[21px] size-2.5 ring-4 ring-card ${c.kind === "time" ? "rounded-full" : ""} ${i === 0 ? "bg-primary" : "bg-muted-foreground/40"}`}
                 />
-                <p className="text-xs font-medium">
-                  {formatShort(new Date(c.releaseAt))}
+                <p
+                  className="truncate text-xs font-medium"
+                  title={c.kind === "link" ? (c.url ?? undefined) : undefined}
+                >
+                  {headline(c)}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {c.changedByName}{" "}

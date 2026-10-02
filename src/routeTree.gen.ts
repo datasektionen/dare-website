@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as BattleRouteImport } from './routes/battle'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as QrRouteImport } from './routes/qr'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
+import { Route as BattleMetatvRouteImport } from './routes/battle_.metatv'
 import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as AuthedDashboardAdminRouteImport } from './routes/_authed/dashboard/_admin'
 import { Route as AuthedDashboardProfilRouteImport } from './routes/_authed/dashboard/profil'
@@ -40,6 +43,16 @@ const BattleRoute = BattleRouteImport.update({
   path: '/battle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrRoute = QrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -58,6 +71,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
   path: '/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BattleMetatvRoute = BattleMetatvRouteImport.update({
+  id: '/battle_/metatv',
+  path: '/battle/metatv',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedDashboardIndexRoute = AuthedDashboardIndexRouteImport.update({
@@ -112,10 +130,13 @@ const AuthedDashboardAdminInstallningarRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/battle': typeof BattleRoute
+  '/login': typeof LoginRoute
+  '/qr': typeof QrRoute
   '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/battle/metatv': typeof BattleMetatvRoute
   '/dashboard/profil': typeof AuthedDashboardProfilRoute
   '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
   '/api/battle/events': typeof ApiBattleEventsRoute
@@ -128,9 +149,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/battle': typeof BattleRoute
+  '/login': typeof LoginRoute
+  '/qr': typeof QrRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/battle/metatv': typeof BattleMetatvRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/dashboard/profil': typeof AuthedDashboardProfilRoute
   '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
@@ -145,10 +169,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/battle': typeof BattleRoute
+  '/login': typeof LoginRoute
+  '/qr': typeof QrRoute
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/battle_/metatv': typeof BattleMetatvRoute
   '/_authed/dashboard/_admin': typeof AuthedDashboardAdminRouteWithChildren
   '/_authed/dashboard/profil': typeof AuthedDashboardProfilRoute
   '/api/avatar/$kthid': typeof ApiAvatarKthidRoute
@@ -164,10 +191,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/battle'
+    | '/login'
+    | '/qr'
     | '/dashboard'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/battle/metatv'
     | '/dashboard/profil'
     | '/api/avatar/$kthid'
     | '/api/battle/events'
@@ -180,9 +210,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/battle'
+    | '/login'
+    | '/qr'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/battle/metatv'
     | '/dashboard'
     | '/dashboard/profil'
     | '/api/avatar/$kthid'
@@ -196,10 +229,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/battle'
+    | '/login'
+    | '/qr'
     | '/_authed/dashboard'
     | '/auth/callback'
     | '/auth/login'
     | '/auth/logout'
+    | '/battle_/metatv'
     | '/_authed/dashboard/_admin'
     | '/_authed/dashboard/profil'
     | '/api/avatar/$kthid'
@@ -215,9 +251,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   BattleRoute: typeof BattleRoute
+  LoginRoute: typeof LoginRoute
+  QrRoute: typeof QrRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  BattleMetatvRoute: typeof BattleMetatvRoute
   ApiAvatarKthidRoute: typeof ApiAvatarKthidRoute
   ApiBattleEventsRoute: typeof ApiBattleEventsRoute
 }
@@ -243,6 +282,20 @@ declare module '@tanstack/react-router' {
       path: '/battle'
       fullPath: '/battle'
       preLoaderRoute: typeof BattleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr': {
+      id: '/qr'
+      path: '/qr'
+      fullPath: '/qr'
+      preLoaderRoute: typeof QrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/dashboard': {
@@ -271,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/logout'
       fullPath: '/auth/logout'
       preLoaderRoute: typeof AuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/battle_/metatv': {
+      id: '/battle_/metatv'
+      path: '/battle/metatv'
+      fullPath: '/battle/metatv'
+      preLoaderRoute: typeof BattleMetatvRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/dashboard/': {
@@ -387,9 +447,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   BattleRoute: BattleRoute,
+  LoginRoute: LoginRoute,
+  QrRoute: QrRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  BattleMetatvRoute: BattleMetatvRoute,
   ApiAvatarKthidRoute: ApiAvatarKthidRoute,
   ApiBattleEventsRoute: ApiBattleEventsRoute,
 }

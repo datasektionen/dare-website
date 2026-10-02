@@ -2,6 +2,7 @@ import { ArrowCounterClockwiseIcon, MinusIcon } from "@phosphor-icons/react"
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import {
+  SIDE_BAR,
   SIDE_BUTTON,
   SIDE_DOT,
   SIDE_TEXT,
@@ -77,11 +78,17 @@ export function BattleControls() {
           </div>
           <div className="relative h-3 -skew-x-12 overflow-hidden bg-muted">
             <div
-              className="absolute inset-y-0 left-0 bg-[linear-gradient(90deg,#ff3d2e,#ff7a1a)] transition-[width] duration-300"
+              className={cn(
+                "absolute inset-y-0 left-0 transition-[width] duration-300",
+                SIDE_BAR.jaeger
+              )}
               style={{ width: `${share * 100}%` }}
             />
             <div
-              className="absolute inset-y-0 right-0 bg-[linear-gradient(90deg,#2a7bff,#3dd6ff)] transition-[width] duration-300"
+              className={cn(
+                "absolute inset-y-0 right-0 transition-[width] duration-300",
+                SIDE_BAR.minttu
+              )}
               style={{ width: `${(1 - share) * 100}%` }}
             />
             <div className="absolute inset-y-0 left-1/2 w-px bg-background/70" />

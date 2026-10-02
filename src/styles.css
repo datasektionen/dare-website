@@ -9,6 +9,10 @@
 @import "@fontsource/instrument-sans/latin-400";
 @import "@fontsource/instrument-sans/latin-500";
 @import "@fontsource/instrument-sans/latin-600";
+/* META TV slide (/battle/metatv). */
+@import "@fontsource/lilita-one/latin-400";
+@import "@fontsource/grenze-gotisch/latin-700";
+@import "@fontsource/archivo-black/latin-400";
 
 /* The dashboard's piste theme (`data-piste`) is always light. */
 @custom-variant dark (&:is(.dark *):not([data-piste] *));
@@ -246,8 +250,27 @@
   }
 }
 
+/* META TV slide (/battle/metatv): the leader's crown drops on. */
+@keyframes metatv-crown-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-140%);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(6%);
+  }
+  75% {
+    transform: translateY(-4%);
+  }
+  100% {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  [class*="animate-[battle-kenburns"] {
+  [class*="animate-[battle-kenburns"],
+  [class*="animate-[metatv-crown-drop"] {
     animation: none;
   }
 }

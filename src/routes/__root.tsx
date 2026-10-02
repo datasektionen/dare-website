@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { lazy, Suspense } from "react"
+import { NotFound } from "@/components/not-found"
 import { ThemeProvider, themeScript } from "@/components/theme-provider"
 import { getUser } from "@/lib/auth/functions"
 
@@ -43,23 +44,22 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
     ],
   }),
-  notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1 className="font-heading text-lg">404</h1>
-      <p className="text-muted-foreground">
-        The requested page could not be found.
-      </p>
-    </main>
-  ),
+  notFoundComponent: NotFound,
   shellComponent: RootDocument,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  // Full-screen pages (landing, /battle) and the dashboard bring their own
-  // chrome.
+  // Full-screen pages (landing, /battle, the 404) and the dashboard bring
+  // their own chrome.
   const { siteHeader, toasts, piste } = useMatches({
     select: (matches) => ({
-      siteHeader: !matches.some((m) => m.staticData.siteHeader === false),
+      // A 404 is `_notFound` for an unknown URL, `status` for `notFound()`.
+      siteHeader: !matches.some(
+        (m) =>
+          m.staticData.siteHeader === false ||
+          m._notFound ||
+          m.status === "notFound"
+      ),
       toasts: !matches.some((m) => m.staticData.toasts === false),
       piste: matches.some((m) => m.staticData.piste),
     }),

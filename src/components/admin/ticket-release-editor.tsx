@@ -7,6 +7,7 @@ import {
 } from "@phosphor-icons/react"
 import {
   useMutation,
+  useQuery,
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query"
@@ -45,6 +46,8 @@ import { useNow } from "@/hooks/use-now"
 import { activityQuery } from "@/lib/activity/queries"
 import { setTicketRelease } from "@/lib/ticket-release/functions"
 import {
+  ticketLinkAdminQuery,
+  ticketLinkQuery,
   ticketReleaseHistoryQuery,
   ticketReleaseQuery,
 } from "@/lib/ticket-release/queries"
@@ -88,10 +91,14 @@ export function TicketReleaseEditor() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [confirm, setConfirm] = useState<"past" | "now" | null>(null)
   const now = useNow()
+  const { data: link } = useQuery(ticketLinkAdminQuery)
+  const noLink = link !== undefined && !link.url
 
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{2}:\d{2}$/.test(time)
   const draft = valid ? fromSwedishTime(date, time) : saved
-  const dirty = valid && draft.getTime() !== saved.getTime()
+  // The editor works in whole minutes; "Släpp nu" saves seconds too.
+  const savedMinute = fromSwedishTime(initial.date, initial.time)
+  const dirty = valid && draft.getTime() !== savedMinute.getTime()
   const isReleased = now !== null && now >= saved.getTime()
 
   const mutation = useMutation({
@@ -103,6 +110,7 @@ export function TicketReleaseEditor() {
         queryKey: ticketReleaseHistoryQuery.queryKey,
       })
       queryClient.invalidateQueries({ queryKey: activityQuery.queryKey })
+      queryClient.invalidateQueries({ queryKey: ticketLinkQuery.queryKey })
       const next = toSwedishTime(new Date(res.at))
       setDate(next.date)
       setTime(next.time)
@@ -350,6 +358,8 @@ export function TicketReleaseEditor() {
               {confirm === "now"
                 ? "Nedräkningen hoppar till noll och köpknappen visas direkt för alla besökare."
                 : `${formatRelease(draft, "sv")} har redan varit. Biljetterna visas som släppta direkt för alla besökare.`}
+              {noLink &&
+                " Ingen biljettlänk är satt än, så besökarna får vänta på den."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
