@@ -4,13 +4,9 @@ import { db } from "@/db"
 import {
   battleEvents,
   featureChanges,
-<<<<<<< Updated upstream
-  ticketReleaseChanges,
-  ticketUrlChanges,
-=======
   gameScoreRemovals,
   ticketReleaseChanges,
->>>>>>> Stashed changes
+  ticketUrlChanges,
 } from "@/db/schema"
 import { adminMiddleware } from "@/lib/auth/functions"
 import type { BattleEventKind, Side } from "@/lib/battle/types"
@@ -72,11 +68,7 @@ export const getActivity = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
   .handler(async (): Promise<Activity[]> => {
     const features = await readFeatures()
-<<<<<<< Updated upstream
-    const [battle, releases, links, toggles] = await Promise.all([
-=======
-    const [battle, releases, toggles, removals] = await Promise.all([
->>>>>>> Stashed changes
+    const [battle, releases, links, toggles, removals] = await Promise.all([
       features.battle
         ? db
             .select()

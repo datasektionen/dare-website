@@ -1,6 +1,6 @@
 {
-  "id": "351a07d9-c9d2-4e14-b927-2ab8235c1da9",
-  "prevId": "6a51c486-0c18-4917-9eb0-4c75ff24e2b0",
+  "id": "3e53751c-6d41-4bd1-8c71-5a496ef1f187",
+  "prevId": "b39211c5-975c-49df-96f4-d0331bafd957",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -329,6 +329,24 @@
           "notNull": true,
           "default": true
         },
+        "ticket_url": {
+          "name": "ticket_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ticket_url_updated_at": {
+          "name": "ticket_url_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ticket_url_updated_by": {
+          "name": "ticket_url_updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -371,6 +389,50 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_by_name": {
+          "name": "changed_by_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ticket_url_changes": {
+      "name": "ticket_url_changes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "changed_by": {
           "name": "changed_by",
