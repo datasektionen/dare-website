@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Countdown } from "@/components/landing/countdown"
 import { Snow } from "@/components/landing/snow"
 import { BIG_QR, TicketQr } from "@/components/landing/ticket-qr"
+import { gameLinkQuery } from "@/lib/game/queries"
 import {
   LIVE_MS,
   ticketLinkQuery,
@@ -32,8 +33,10 @@ export const Route = createFileRoute("/qr")({
     ],
   }),
   loader: async ({ context }) => {
-    const release =
-      await context.queryClient.ensureQueryData(ticketReleaseQuery)
+    const [release] = await Promise.all([
+      context.queryClient.ensureQueryData(ticketReleaseQuery),
+      context.queryClient.ensureQueryData(gameLinkQuery),
+    ])
     if (Date.now() >= new Date(release.at).getTime())
       await context.queryClient.ensureQueryData(ticketLinkQuery)
   },
@@ -52,6 +55,7 @@ function QrPage() {
   )
   const onZero = useCallback(() => setReleased(true), [])
   const { data: link } = useQuery({ ...ticketLinkQuery, enabled: released })
+  const { data: showGame } = useQuery(gameLinkQuery)
 
   useEffect(() => {
     setReleased(Date.now() >= release.getTime())
@@ -98,6 +102,16 @@ function QrPage() {
             {link?.state === "missing" ? "Länken kommer strax" : "Släpps nu …"}
           </p>
         </div>
+      )}
+
+      {showGame && (
+        <p className="relative text-[clamp(14px,2vh,22px)] text-white/70">
+          Spela också vårt spel{" "}
+          <span className="font-semibold text-white">Puckopist</span> på{" "}
+          <span className="font-semibold text-white">
+            dåre.datasektionen.se/game
+          </span>
+        </p>
       )}
     </main>
   )

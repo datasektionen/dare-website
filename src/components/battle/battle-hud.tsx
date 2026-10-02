@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import {
   type BattleState,
   jaegerShare,
@@ -98,9 +99,16 @@ function Corner({
 export function BattleHud({
   state,
   combo,
+  corners,
 }: {
   state: BattleState
   combo: { side: Side; count: number } | null
+  /**
+   * Links for the bottom corners. On a landscape screen they place
+   * themselves there; in portrait they sit in a row under the status line,
+   * where the corners would crowd it.
+   */
+  corners?: ReactNode
 }) {
   const share = jaegerShare(state)
   const [pj, pm] = percentages(state)
@@ -192,6 +200,11 @@ export function BattleHud({
               ? `${SIDE_NAMES[lead]} leder med ${margin}`
               : "Dödläge!"}
         </div>
+        {corners && (
+          <div className="flex w-full items-end justify-between gap-[3vw] pt-[1vh] landscape:contents">
+            {corners}
+          </div>
+        )}
       </div>
     </div>
   )

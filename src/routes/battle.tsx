@@ -2,8 +2,10 @@ import digitFont from "@fontsource/big-shoulders-display/files/big-shoulders-dis
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { BattleGameLink } from "@/components/battle/battle-game-link"
 import { BattleHud } from "@/components/battle/battle-hud"
 import { BattleRenderer } from "@/components/battle/battle-renderer"
+import { BattleTicketQr } from "@/components/battle/battle-ticket-qr"
 import { OfflineBadge, RetryScreen } from "@/components/battle/live-status"
 import { battleQuery } from "@/lib/battle/queries"
 import {
@@ -13,6 +15,7 @@ import {
   type Side,
 } from "@/lib/battle/types"
 import { useBattleStream } from "@/lib/battle/use-battle-stream"
+import { gameLinkQuery } from "@/lib/game/queries"
 import { featuresQuery } from "@/lib/settings/queries"
 import { cn } from "@/lib/utils"
 
@@ -37,7 +40,12 @@ export const Route = createFileRoute("/battle")({
     const features = await context.queryClient.ensureQueryData(featuresQuery)
     if (!features.battle) throw redirect({ to: "/" })
   },
-  loader: ({ context }) => context.queryClient.ensureQueryData(battleQuery),
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(battleQuery),
+      context.queryClient.ensureQueryData(gameLinkQuery),
+    ])
+  },
   component: BattlePage,
   errorComponent: RetryScreen,
 })
@@ -256,7 +264,16 @@ function BattlePage() {
       {/* Vignette. */}
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,.65))]" />
 
-      <BattleHud state={data} combo={combo} />
+      <BattleHud
+        state={data}
+        combo={combo}
+        corners={
+          <>
+            <BattleGameLink className="landscape:absolute landscape:bottom-[3vh] landscape:left-[3vw]" />
+            <BattleTicketQr className="ml-auto landscape:absolute landscape:right-[3vw] landscape:bottom-[3vh]" />
+          </>
+        }
+      />
       <OfflineBadge className="bottom-[2vh] left-1/2 -translate-x-1/2" />
 
       {/* Impact words at the clash point. */}
