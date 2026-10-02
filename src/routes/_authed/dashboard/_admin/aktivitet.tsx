@@ -21,6 +21,10 @@ const FILTERS = {
     match: (a: Activity) =>
       a.type === "ticket-release" || a.type === "ticket-link",
   },
+  puckopist: {
+    label: "Puckopist",
+    match: (a: Activity) => a.type === "game",
+  },
 } as const
 type Filter = keyof typeof FILTERS
 
@@ -30,7 +34,7 @@ export const Route = createFileRoute("/_authed/dashboard/_admin/aktivitet")({
   // The tab lives in the URL, so it survives reloads and can be shared.
   validateSearch: z.object({
     visa: z
-      .enum(["alla", "battle", "biljettslapp"])
+      .enum(["alla", "battle", "biljettslapp", "puckopist"])
       .optional()
       .catch(undefined),
   }),

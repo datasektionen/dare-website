@@ -63,6 +63,7 @@ area. Pages under `src/routes/_authed/dashboard/_admin/` are for admins only.
 | Profil | all | Account, permission, theme, log out |
 | Jäger vs Minttu | admins | Score the battle, who has scored most |
 | Biljettsläpp | admins | The ticket release time the landing page counts down to |
+| Puckopist | admins | Every saved run of the `/game` leaderboard; search by name, remove runs |
 | Aktivitet | admins | Everything admins have changed, filterable with tabs |
 | Inställningar | admins | Switch optional features on and off (below) |
 
@@ -82,6 +83,12 @@ Profile pictures (avatars) come from `/api/avatar/<kthid>`, which looks them
 up in SSO's internal API (`SSO_API_URL`; SSO gets them from rfinger) and
 redirects to them. The links expire, so they're only cached in memory for a
 few hours. Without `SSO_API_URL`, avatars show initials.
+
+Runs saved in the Puckopist game (`/game`) are stored in `game_scores`; the
+game shows the top 5. Under **Puckopist**, admins see every run with its
+place and can remove one run, or every run under a name (ignoring case),
+e.g. names that aren't allowed. Removals made there are logged in
+`game_score_removals` and shown under **Aktivitet**.
 
 The ticket release time is stored in `site_settings` (a single row), and every
 change is logged in `ticket_release_changes`. Until an admin sets a time,

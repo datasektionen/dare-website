@@ -1,4 +1,4 @@
-import { GearIcon, type Icon } from "@phosphor-icons/react"
+import { GearIcon, type Icon, PersonSimpleSkiIcon } from "@phosphor-icons/react"
 import type { Feature } from "@/lib/settings/features.server"
 import type { Piste } from "./piste-mark"
 
@@ -9,6 +9,7 @@ export type NavItem = {
     | "/dashboard/biljettslapp"
     | "/dashboard/aktivitet"
     | "/dashboard/installningar"
+    | "/dashboard/puckopist"
   label: string
   /** Main pages are marked like pistes on a trail map. */
   piste?: Piste
@@ -31,7 +32,7 @@ export const MAIN: NavItem[] = [
   },
 ]
 
-/** Switchable features, in the order they're used. */
+/** Parts of the site, in the order they're used. Most can be switched off. */
 export const FEATURES: NavItem[] = [
   {
     to: "/dashboard/biljettslapp",
@@ -46,6 +47,13 @@ export const FEATURES: NavItem[] = [
     piste: "black",
     admin: true,
     feature: "battle",
+  },
+  {
+    to: "/dashboard/puckopist",
+    label: "Puckopist",
+    // Not a piste: all four colours are taken, and it's a game.
+    icon: PersonSimpleSkiIcon,
+    admin: true,
   },
 ]
 

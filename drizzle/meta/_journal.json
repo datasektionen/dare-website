@@ -33,8 +33,20 @@
     {
       "idx": 4,
       "version": "7",
+<<<<<<< Updated upstream
       "when": 1790898997261,
       "tag": "0004_ticket_url",
+=======
+      "when": 1790874372449,
+      "tag": "0004_game_scores",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790875019137,
+      "tag": "0005_game_score_removals",
+>>>>>>> Stashed changes
       "breakpoints": true
     }
   ]

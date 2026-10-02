@@ -1,7 +1,9 @@
+import { PersonSimpleSkiIcon } from "@phosphor-icons/react"
 import { SIDE_DOT } from "@/components/battle/side-styles"
 import { useNow } from "@/hooks/use-now"
 import type { Activity } from "@/lib/activity/functions"
 import { SIDE_NAMES } from "@/lib/battle/types"
+import { describeRemoval } from "@/lib/game/admin"
 import { FEATURE_NAMES } from "@/lib/settings/names"
 import { formatRelative, formatShort } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -9,6 +11,7 @@ import { PisteMark } from "./piste-mark"
 import { UserAvatar } from "./user-avatar"
 
 function describe(a: Activity) {
+  if (a.type === "game") return describeRemoval(a)
   if (a.type === "feature")
     return `${a.enabled ? "slog på" : "stängde av"} ${FEATURE_NAMES[a.feature]}`
   if (a.type === "ticket-release")
@@ -21,8 +24,8 @@ function describe(a: Activity) {
 }
 
 /**
- * Who did it, with a small marker for what was changed: the piste marker of
- * its page, or the side's colour for Jäger vs Minttu points.
+ * Who did it, with a small marker for what was changed: the piste marker or
+ * icon of its page, or the side's colour for Jäger vs Minttu points.
  */
 function Who({ a }: { a: Activity }) {
   const side = a.type === "battle" ? a.side : null
@@ -34,6 +37,8 @@ function Who({ a }: { a: Activity }) {
           <PisteMark piste="red" className="size-1.5" />
         ) : a.type === "feature" ? (
           <span className="size-1.5 bg-muted-foreground" />
+        ) : a.type === "game" ? (
+          <PersonSimpleSkiIcon weight="bold" className="size-2.5" />
         ) : (
           <span
             className={cn(

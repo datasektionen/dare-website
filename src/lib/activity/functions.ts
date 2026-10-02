@@ -4,8 +4,13 @@ import { db } from "@/db"
 import {
   battleEvents,
   featureChanges,
+<<<<<<< Updated upstream
   ticketReleaseChanges,
   ticketUrlChanges,
+=======
+  gameScoreRemovals,
+  ticketReleaseChanges,
+>>>>>>> Stashed changes
 } from "@/db/schema"
 import { adminMiddleware } from "@/lib/auth/functions"
 import type { BattleEventKind, Side } from "@/lib/battle/types"
@@ -47,6 +52,17 @@ export type Activity =
       feature: Feature
       enabled: boolean
     }
+  | {
+      /** Runs removed from the Puckopist leaderboard. */
+      type: "game"
+      id: string
+      at: string
+      by: string
+      byName: string
+      name: string
+      runs: number
+      bestScore: number
+    }
 
 /**
  * Everything admins have done, newest first. Events of features that are
@@ -56,7 +72,11 @@ export const getActivity = createServerFn({ method: "GET" })
   .middleware([adminMiddleware])
   .handler(async (): Promise<Activity[]> => {
     const features = await readFeatures()
+<<<<<<< Updated upstream
     const [battle, releases, links, toggles] = await Promise.all([
+=======
+    const [battle, releases, toggles, removals] = await Promise.all([
+>>>>>>> Stashed changes
       features.battle
         ? db
             .select()
@@ -83,6 +103,11 @@ export const getActivity = createServerFn({ method: "GET" })
         .from(featureChanges)
         .orderBy(desc(featureChanges.id))
         .limit(20),
+      db
+        .select()
+        .from(gameScoreRemovals)
+        .orderBy(desc(gameScoreRemovals.id))
+        .limit(50),
     ])
     const items: Activity[] = [
       ...battle.map((e) => ({
@@ -118,6 +143,16 @@ export const getActivity = createServerFn({ method: "GET" })
         byName: f.changedByName,
         feature: f.feature,
         enabled: f.enabled,
+      })),
+      ...removals.map((r) => ({
+        type: "game" as const,
+        id: `g${r.id}`,
+        at: r.removedAt.toISOString(),
+        by: r.removedBy,
+        byName: r.removedByName,
+        name: r.name,
+        runs: r.runs,
+        bestScore: r.bestScore,
       })),
     ]
     return items.sort((a, b) => b.at.localeCompare(a.at))

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as BattleRouteImport } from './routes/battle'
+import { Route as GameRouteImport } from './routes/game'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as QrRouteImport } from './routes/qr'
 import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
@@ -28,6 +29,7 @@ import { Route as AuthedDashboardAdminAktivitetRouteImport } from './routes/_aut
 import { Route as AuthedDashboardAdminBattleRouteImport } from './routes/_authed/dashboard/_admin/battle'
 import { Route as AuthedDashboardAdminBiljettslappRouteImport } from './routes/_authed/dashboard/_admin/biljettslapp'
 import { Route as AuthedDashboardAdminInstallningarRouteImport } from './routes/_authed/dashboard/_admin/installningar'
+import { Route as AuthedDashboardAdminPuckopistRouteImport } from './routes/_authed/dashboard/_admin/puckopist'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,6 +43,11 @@ const AuthedRoute = AuthedRouteImport.update({
 const BattleRoute = BattleRouteImport.update({
   id: '/battle',
   path: '/battle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GameRoute = GameRouteImport.update({
+  id: '/game',
+  path: '/game',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -126,10 +133,17 @@ const AuthedDashboardAdminInstallningarRoute =
     path: '/installningar',
     getParentRoute: () => AuthedDashboardAdminRoute,
   } as any)
+const AuthedDashboardAdminPuckopistRoute =
+  AuthedDashboardAdminPuckopistRouteImport.update({
+    id: '/puckopist',
+    path: '/puckopist',
+    getParentRoute: () => AuthedDashboardAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/battle': typeof BattleRoute
+  '/game': typeof GameRoute
   '/login': typeof LoginRoute
   '/qr': typeof QrRoute
   '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
@@ -145,10 +159,12 @@ export interface FileRoutesByFullPath {
   '/dashboard/battle': typeof AuthedDashboardAdminBattleRoute
   '/dashboard/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
   '/dashboard/installningar': typeof AuthedDashboardAdminInstallningarRoute
+  '/dashboard/puckopist': typeof AuthedDashboardAdminPuckopistRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/battle': typeof BattleRoute
+  '/game': typeof GameRoute
   '/login': typeof LoginRoute
   '/qr': typeof QrRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -163,12 +179,14 @@ export interface FileRoutesByTo {
   '/dashboard/battle': typeof AuthedDashboardAdminBattleRoute
   '/dashboard/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
   '/dashboard/installningar': typeof AuthedDashboardAdminInstallningarRoute
+  '/dashboard/puckopist': typeof AuthedDashboardAdminPuckopistRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/battle': typeof BattleRoute
+  '/game': typeof GameRoute
   '/login': typeof LoginRoute
   '/qr': typeof QrRoute
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
@@ -185,12 +203,14 @@ export interface FileRoutesById {
   '/_authed/dashboard/_admin/battle': typeof AuthedDashboardAdminBattleRoute
   '/_authed/dashboard/_admin/biljettslapp': typeof AuthedDashboardAdminBiljettslappRoute
   '/_authed/dashboard/_admin/installningar': typeof AuthedDashboardAdminInstallningarRoute
+  '/_authed/dashboard/_admin/puckopist': typeof AuthedDashboardAdminPuckopistRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/battle'
+    | '/game'
     | '/login'
     | '/qr'
     | '/dashboard'
@@ -206,10 +226,12 @@ export interface FileRouteTypes {
     | '/dashboard/battle'
     | '/dashboard/biljettslapp'
     | '/dashboard/installningar'
+    | '/dashboard/puckopist'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/battle'
+    | '/game'
     | '/login'
     | '/qr'
     | '/auth/callback'
@@ -224,11 +246,13 @@ export interface FileRouteTypes {
     | '/dashboard/battle'
     | '/dashboard/biljettslapp'
     | '/dashboard/installningar'
+    | '/dashboard/puckopist'
   id:
     | '__root__'
     | '/'
     | '/_authed'
     | '/battle'
+    | '/game'
     | '/login'
     | '/qr'
     | '/_authed/dashboard'
@@ -245,12 +269,14 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/_admin/battle'
     | '/_authed/dashboard/_admin/biljettslapp'
     | '/_authed/dashboard/_admin/installningar'
+    | '/_authed/dashboard/_admin/puckopist'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   BattleRoute: typeof BattleRoute
+  GameRoute: typeof GameRoute
   LoginRoute: typeof LoginRoute
   QrRoute: typeof QrRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -282,6 +308,13 @@ declare module '@tanstack/react-router' {
       path: '/battle'
       fullPath: '/battle'
       preLoaderRoute: typeof BattleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game': {
+      id: '/game'
+      path: '/game'
+      fullPath: '/game'
+      preLoaderRoute: typeof GameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -396,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDashboardAdminInstallningarRouteImport
       parentRoute: typeof AuthedDashboardAdminRoute
     }
+    '/_authed/dashboard/_admin/puckopist': {
+      id: '/_authed/dashboard/_admin/puckopist'
+      path: '/puckopist'
+      fullPath: '/dashboard/puckopist'
+      preLoaderRoute: typeof AuthedDashboardAdminPuckopistRouteImport
+      parentRoute: typeof AuthedDashboardAdminRoute
+    }
   }
 }
 
@@ -404,6 +444,7 @@ interface AuthedDashboardAdminRouteChildren {
   AuthedDashboardAdminBattleRoute: typeof AuthedDashboardAdminBattleRoute
   AuthedDashboardAdminBiljettslappRoute: typeof AuthedDashboardAdminBiljettslappRoute
   AuthedDashboardAdminInstallningarRoute: typeof AuthedDashboardAdminInstallningarRoute
+  AuthedDashboardAdminPuckopistRoute: typeof AuthedDashboardAdminPuckopistRoute
 }
 
 const AuthedDashboardAdminRouteChildren: AuthedDashboardAdminRouteChildren = {
@@ -412,6 +453,7 @@ const AuthedDashboardAdminRouteChildren: AuthedDashboardAdminRouteChildren = {
   AuthedDashboardAdminBiljettslappRoute: AuthedDashboardAdminBiljettslappRoute,
   AuthedDashboardAdminInstallningarRoute:
     AuthedDashboardAdminInstallningarRoute,
+  AuthedDashboardAdminPuckopistRoute: AuthedDashboardAdminPuckopistRoute,
 }
 
 const AuthedDashboardAdminRouteWithChildren =
@@ -447,6 +489,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   BattleRoute: BattleRoute,
+  GameRoute: GameRoute,
   LoginRoute: LoginRoute,
   QrRoute: QrRoute,
   AuthCallbackRoute: AuthCallbackRoute,

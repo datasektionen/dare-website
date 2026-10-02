@@ -1,0 +1,515 @@
+import digitFont from "@fontsource/big-shoulders-display/files/big-shoulders-display-latin-900-normal.woff2?url"
+import { useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Leaderboard, SaveScore } from "@/components/game/leaderboard"
+import {
+  type Hud,
+  PuckopistRenderer,
+} from "@/components/game/puckopist-renderer"
+import {
+  DISPLAY,
+  ICE,
+  MONO,
+  SHADOW,
+  T,
+  type Texts,
+} from "@/components/game/texts"
+import type { Lang } from "@/components/landing/countdown"
+import { LandingNav } from "@/components/landing/landing-nav"
+import { Snow } from "@/components/landing/snow"
+import { PillArrow, pillClass } from "@/components/landing/ticket-button"
+import type { ScoreEntry } from "@/lib/game/leaderboard"
+import type { GameEvent } from "@/lib/game/puckopist"
+import { leaderboardQuery } from "@/lib/game/queries"
+import { cn } from "@/lib/utils"
+
+export const Route = createFileRoute("/game")({
+  staticData: { siteHeader: false, toasts: false },
+  head: () => ({
+    meta: [{ title: "Puckopist · dÅre 27" }],
+    links: [
+      {
+        rel: "preload",
+        href: digitFont,
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
+    ],
+  }),
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(leaderboardQuery),
+  component: GamePage,
+})
+
+type Phase = "ready" | "playing" | "over"
+type Pop = { id: number; e: GameEvent; x: number; y: number; tilt: number }
+type Result = Hud & { record: boolean }
+
+const BEST_KEY = "puckopist-best"
+/** How long the wipeout plays out before the score is shown. */
+const OVER_DELAY = 1200
+/** Ignore presses this soon after the score is shown, so a held jump doesn't restart. */
+const RESTART_GUARD = 600
+
+let nextId = 0
+
+function readBest() {
+  try {
+    return Number(localStorage.getItem(BEST_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+function saveBest(score: number) {
+  try {
+    localStorage.setItem(BEST_KEY, String(score))
+  } catch {
+    // Private mode or blocked storage: the record just isn't kept.
+  }
+}
+
+/** Typing in a field must not jump or restart. */
+function isTyping(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+  )
+}
+
+function GamePage() {
+  const { user } = Route.useRouteContext()
+  const queryClient = useQueryClient()
+  const [lang, setLang] = useState<Lang>("sv")
+  const L = T[lang]
+  const rootRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rendererRef = useRef<PuckopistRenderer | null>(null)
+  const [phase, setPhase] = useState<Phase>("ready")
+  const phaseRef = useRef<Phase>("ready")
+  const shownAt = useRef(0)
+  const [hud, setHud] = useState<Hud>({ score: 0, cans: 0, distance: 0 })
+  const [best, setBest] = useState(0)
+  const [result, setResult] = useState<Result | null>(null)
+  /** This run, once saved to the leaderboard. */
+  const [mine, setMine] = useState<ScoreEntry | null>(null)
+  const [showBoard, setShowBoard] = useState(false)
+  const [pops, setPops] = useState<Pop[]>([])
+  // Phones and tablets get instructions for tapping instead of keys.
+  const [touch, setTouch] = useState(false)
+
+  const changePhase = useCallback((p: Phase) => {
+    phaseRef.current = p
+    shownAt.current = Date.now()
+    setPhase(p)
+  }, [])
+
+  const start = useCallback(() => {
+    if (Date.now() - shownAt.current < RESTART_GUARD) return
+    rendererRef.current?.play()
+    setHud({ score: 0, cans: 0, distance: 0 })
+    setPops([])
+    setMine(null)
+    changePhase("playing")
+  }, [changePhase])
+
+  const onEvent = useCallback(
+    (e: GameEvent, at: { x: number; y: number }) => {
+      if (e.kind === "jump") return
+      if (e.kind === "land" && e.points === 0) return
+      const id = ++nextId
+      const pop = { id, e, ...at, tilt: Math.random() * 12 - 6 }
+      setPops((p) => [...p.slice(-6), pop])
+      setTimeout(() => setPops((p) => p.filter((q) => q.id !== id)), 1300)
+      if (e.kind !== "crash") return
+
+      navigator.vibrate?.(80)
+      setTimeout(() => {
+        const stats = rendererRef.current?.stats()
+        if (!stats) return
+        const previous = readBest()
+        const record = stats.score > previous
+        if (record) saveBest(stats.score)
+        setBest(Math.max(previous, stats.score))
+        setResult({ ...stats, record })
+        changePhase("over")
+        // Others may have played since the page loaded.
+        queryClient.invalidateQueries({ queryKey: leaderboardQuery.queryKey })
+      }, OVER_DELAY)
+    },
+    [changePhase, queryClient]
+  )
+
+  useEffect(() => {
+    setBest(readBest())
+    setTouch(matchMedia("(pointer: coarse)").matches)
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const renderer = new PuckopistRenderer(canvas, {
+      onEvent,
+      onHud: setHud,
+      shake: !matchMedia("(prefers-reduced-motion: reduce)").matches,
+    })
+    rendererRef.current = renderer
+    renderer.start()
+    return () => renderer.destroy()
+  }, [onEvent])
+
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
+
+  // Space, up or W jumps, and so does pressing anywhere on the piste with a
+  // finger or the mouse. On the start and score screens, the keys start a run.
+  useEffect(() => {
+    const root = rootRef.current
+    const isJump = (e: KeyboardEvent) =>
+      e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW"
+    const onDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
+      const enter = e.code === "Enter" || e.code === "NumpadEnter"
+      if (!isJump(e) && !enter) return
+      // Enter on a focused button already clicks it.
+      if (enter && e.target instanceof HTMLButtonElement) return
+      e.preventDefault()
+      if (e.repeat) return
+      if (phaseRef.current === "playing") rendererRef.current?.press()
+      else start()
+    }
+    const onUp = (e: KeyboardEvent) => {
+      if (isJump(e)) rendererRef.current?.release()
+    }
+    // Jump stays held while any finger is down, so a second finger landing
+    // or lifting doesn't cut a flip short.
+    const fingers = new Set<number>()
+    const onPointer = (e: PointerEvent) => {
+      if (phaseRef.current !== "playing") return
+      // Let the logo and language buttons work.
+      if ((e.target as HTMLElement).closest("a,button")) return
+      e.preventDefault()
+      fingers.add(e.pointerId)
+      rendererRef.current?.press()
+    }
+    const onLift = (e: PointerEvent) => {
+      fingers.delete(e.pointerId)
+      if (fingers.size === 0) rendererRef.current?.release()
+    }
+    const releaseAll = () => {
+      fingers.clear()
+      rendererRef.current?.release()
+    }
+    // Long presses on phones would open a menu.
+    const noMenu = (e: Event) => {
+      if (!isTyping(e.target)) e.preventDefault()
+    }
+    root?.addEventListener("pointerdown", onPointer)
+    root?.addEventListener("contextmenu", noMenu)
+    addEventListener("keydown", onDown)
+    addEventListener("keyup", onUp)
+    addEventListener("pointerup", onLift)
+    addEventListener("pointercancel", onLift)
+    addEventListener("blur", releaseAll)
+    return () => {
+      root?.removeEventListener("pointerdown", onPointer)
+      root?.removeEventListener("contextmenu", noMenu)
+      removeEventListener("keydown", onDown)
+      removeEventListener("keyup", onUp)
+      removeEventListener("pointerup", onLift)
+      removeEventListener("pointercancel", onLift)
+      removeEventListener("blur", releaseAll)
+    }
+  }, [start])
+
+  const admin = !!user?.isAdmin
+  const defaultName = user?.name.split(" ")[0] ?? ""
+
+  return (
+    <div
+      ref={rootRef}
+      lang={lang}
+      className={cn(
+        "fixed inset-0 overflow-hidden bg-[#050818] font-['Instrument_Sans',sans-serif] text-white select-none selection:bg-[#e83d84] [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]",
+        // While riding, a finger on the screen is for jumping, never for
+        // scrolling or zooming the page.
+        phase === "playing" && "touch-none"
+      )}
+    >
+      <canvas ref={canvasRef} className="absolute inset-0 block size-full" />
+      <Snow
+        density={0.5}
+        className="pointer-events-none absolute inset-0 z-[1]"
+      />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(3,6,20,.55))]" />
+      <LandingNav
+        lang={lang}
+        onLang={setLang}
+        className="absolute inset-x-0 top-0 z-30"
+      />
+
+      {phase === "playing" && <Scoreboard hud={hud} L={L} />}
+
+      <div className="pointer-events-none absolute inset-0 z-20">
+        {pops.map((p) => (
+          <PopText key={p.id} pop={p} L={L} />
+        ))}
+      </div>
+
+      {phase !== "playing" && (
+        // Scrolls when it doesn't fit, e.g. on a phone held sideways.
+        <div className="absolute inset-0 z-20 touch-manipulation overflow-y-auto overscroll-contain bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,rgba(5,8,24,.72)_0%,rgba(5,8,24,.35)_60%,rgba(5,8,24,0)_100%)]">
+          <div className="flex min-h-full flex-col items-center justify-center gap-[clamp(14px,2.4vh,26px)] px-5 pt-[clamp(84px,12vh,120px)] pb-8 text-center">
+            {phase === "ready" ? (
+              <>
+                <Kicker>{L.presents}</Kicker>
+                <h1
+                  className={cn(
+                    DISPLAY,
+                    ICE,
+                    "text-[clamp(64px,14vw,230px)] leading-[.85] uppercase [@media(max-height:500px)]:text-[64px]"
+                  )}
+                >
+                  Puckopist
+                </h1>
+                {showBoard ? (
+                  <Leaderboard L={L} mine={null} admin={admin} />
+                ) : (
+                  <>
+                    <p
+                      className={cn(
+                        "max-w-[34ch] text-[clamp(15px,1.4vw,19px)] font-medium text-[#f4f8ff]",
+                        SHADOW
+                      )}
+                    >
+                      {L.tagline}
+                    </p>
+                    <ul
+                      className={cn(
+                        MONO,
+                        "flex flex-col gap-1.5 text-[clamp(10px,1vw,13px)] tracking-[.18em] text-[#cfe2ff]",
+                        SHADOW
+                      )}
+                    >
+                      <li>{touch ? L.jumpTouch : L.jump}</li>
+                      <li>{touch ? L.flipTouch : L.flip}</li>
+                      <li>{L.land}</li>
+                    </ul>
+                  </>
+                )}
+              </>
+            ) : (
+              result && (
+                <div className="flex w-full max-w-4xl flex-col items-center gap-[clamp(18px,3vh,32px)] md:flex-row md:items-center md:justify-center md:gap-14">
+                  <div className="flex w-full max-w-sm flex-col items-center gap-[clamp(12px,2vh,20px)]">
+                    <Kicker>{L.crash}</Kicker>
+                    <div className="flex flex-col items-center gap-2">
+                      <div
+                        className={cn(
+                          DISPLAY,
+                          ICE,
+                          "text-[clamp(72px,13vw,200px)] leading-[.85] tabular-nums [@media(max-height:500px)]:text-[72px]"
+                        )}
+                      >
+                        {result.score}
+                      </div>
+                      <Label>{L.score}</Label>
+                    </div>
+                    <div className="flex gap-[clamp(28px,5vw,64px)]">
+                      <Stat value={result.cans} label={L.cans} />
+                      <Stat value={result.distance} label={L.metres} />
+                    </div>
+                    {result.record && (
+                      <div
+                        className={cn(
+                          MONO,
+                          "rounded-full bg-white px-4 py-1.5 text-xs font-medium tracking-[.2em] text-[#c92c6d] shadow-[0_8px_30px_rgba(232,61,132,.45)]"
+                        )}
+                      >
+                        {L.newBest}
+                      </div>
+                    )}
+                    {mine ? (
+                      <p
+                        role="status"
+                        className={cn("text-[15px] font-medium", SHADOW)}
+                      >
+                        {L.saved(mine.rank)}
+                      </p>
+                    ) : (
+                      result.score > 0 && (
+                        <SaveScore
+                          run={result}
+                          defaultName={defaultName}
+                          onSaved={setMine}
+                          L={L}
+                        />
+                      )
+                    )}
+                  </div>
+                  <Leaderboard L={L} mine={mine} admin={admin} />
+                </div>
+              )
+            )}
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <button type="button" onClick={start} className={pillClass}>
+                <span>{phase === "ready" ? L.start : L.again}</span>
+                <PillArrow />
+              </button>
+              <span
+                className={cn(
+                  MONO,
+                  "text-[11px] tracking-[.2em] text-white/70",
+                  SHADOW
+                )}
+              >
+                {!touch && L.orSpace}
+                {!touch && best > 0 && " · "}
+                {best > 0 && `${L.best} ${best}`}
+              </span>
+              {phase === "ready" && (
+                <button
+                  type="button"
+                  onClick={() => setShowBoard((s) => !s)}
+                  className={cn(
+                    MONO,
+                    "cursor-pointer rounded-full border border-white/25 bg-white/10 px-4 py-2 text-[11px] tracking-[.2em] text-white backdrop-blur-[10px] transition-colors hover:bg-white/20"
+                  )}
+                >
+                  {showBoard ? L.back : L.leaderboard}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Kicker({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        MONO,
+        "flex items-center gap-4 text-[clamp(11px,1.1vw,14px)] tracking-[.34em] text-[#eef5ff]",
+        SHADOW
+      )}
+    >
+      <span className="h-px w-10 bg-white/70" />
+      <span className="whitespace-nowrap">{children}</span>
+      <span className="h-px w-10 bg-white/70" />
+    </div>
+  )
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        MONO,
+        "text-[clamp(10px,1vw,13px)] font-medium tracking-[.32em] text-white [text-shadow:0_1px_3px_rgba(5,12,40,.7),0_2px_14px_rgba(5,12,40,.6)]"
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className={cn(
+          DISPLAY,
+          "text-[clamp(30px,4vw,56px)] leading-none text-white tabular-nums",
+          SHADOW
+        )}
+      >
+        {value}
+      </div>
+      <Label>{label}</Label>
+    </div>
+  )
+}
+
+/** Score, cans and distance, under the logo while riding. */
+function Scoreboard({ hud, L }: { hud: Hud; L: Texts }) {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-[clamp(78px,11vh,120px)] z-10 flex items-end justify-center gap-[clamp(24px,5vw,72px)]">
+      <Stat value={hud.cans} label={L.cans} />
+      <div className="flex flex-col items-center gap-1">
+        <div
+          className={cn(
+            DISPLAY,
+            ICE,
+            "text-[clamp(52px,8vw,120px)] leading-[.85] tabular-nums"
+          )}
+        >
+          {hud.score}
+        </div>
+        <Label>{L.score}</Label>
+      </div>
+      <Stat value={hud.distance} label={L.metres} />
+    </div>
+  )
+}
+
+/** Trick names, can points and the wipeout, popping up where they happen. */
+function PopText({ pop, L }: { pop: Pop; L: Texts }) {
+  const { e } = pop
+  if (e.kind === "can")
+    return (
+      <span
+        className={cn(
+          DISPLAY,
+          "absolute -translate-x-1/2 animate-[battle-float_1.1s_ease-out_forwards] text-[clamp(22px,2.6vw,38px)] text-[#ffc15a] italic [text-shadow:0_0_18px_rgba(255,150,40,.9)]"
+        )}
+        style={{ left: pop.x, top: pop.y - 30 }}
+      >
+        +10
+      </span>
+    )
+
+  const lines =
+    e.kind === "crash"
+      ? [L.crash]
+      : e.kind === "land"
+        ? [
+            e.flips > 0 && (L.flips[e.flips] ?? L.manyFlips(e.flips)),
+            e.bigAir && L.bigAir,
+            e.perfect && L.perfect,
+            `+${e.points}`,
+          ].filter((l): l is string => !!l)
+        : []
+  return (
+    <span
+      className={cn(
+        DISPLAY,
+        "absolute flex animate-[battle-word_1.2s_cubic-bezier(.2,.8,.2,1)_forwards] flex-col items-center leading-[.95] whitespace-nowrap uppercase italic",
+        e.kind === "crash"
+          ? "text-[clamp(48px,8vw,140px)] text-white [-webkit-text-stroke:2px_#7a1745] [text-shadow:0_0_30px_rgba(232,61,132,.9),5px_5px_0_#7a1745]"
+          : "text-[clamp(30px,4.4vw,76px)] text-[#ffe3ef] [-webkit-text-stroke:2px_#7a1745] [text-shadow:0_0_24px_rgba(232,61,132,.85),4px_4px_0_#7a1745]"
+      )}
+      style={{
+        left: pop.x,
+        top: pop.y,
+        ["--tilt" as string]: `${pop.tilt}deg`,
+      }}
+    >
+      {lines.map((l, i) => (
+        <span
+          key={l}
+          className={
+            i === lines.length - 1 && e.kind === "land"
+              ? "text-[.6em] text-[#ffc15a]"
+              : undefined
+          }
+        >
+          {l}
+        </span>
+      ))}
+    </span>
+  )
+}
