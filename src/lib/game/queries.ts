@@ -1,14 +1,33 @@
 import { queryOptions } from "@tanstack/react-query"
-import { getLeaderboard, getScores } from "./functions"
+import type { ScoreView } from "./admin"
+import { getGameOverview, getScores } from "./admin-functions"
+import { getGameLink, getLeaderboard } from "./functions"
+
+/** Whether the start page shows a link to the game. */
+export const gameLinkQuery = queryOptions({
+  queryKey: ["game", "link"],
+  queryFn: () => getGameLink(),
+})
 
 export const leaderboardQuery = queryOptions({
   queryKey: ["game", "leaderboard"],
   queryFn: () => getLeaderboard(),
 })
 
-/** All saved runs for the dashboard, optionally searched by name. */
-export const scoresQuery = (q: string, limit: number) =>
+/** Saved runs for the dashboard, in one view, optionally searched. */
+export const scoresQuery = (opts: {
+  q: string
+  view: ScoreView
+  device: string | null
+  limit: number
+}) =>
   queryOptions({
-    queryKey: ["game", "scores", { q, limit }],
-    queryFn: () => getScores({ data: { q, limit } }),
+    queryKey: ["game", "scores", opts],
+    queryFn: () => getScores({ data: opts }),
   })
+
+/** Settings, today's numbers and bans, for the dashboard. */
+export const gameOverviewQuery = queryOptions({
+  queryKey: ["game", "overview"],
+  queryFn: () => getGameOverview(),
+})

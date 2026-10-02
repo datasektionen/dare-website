@@ -25,6 +25,16 @@ export const siteSettings = pgTable(
      * can be switched off (the landing page then hides the numbers).
      */
     ticketReleaseEnabled: boolean().notNull().default(true),
+    /** Puckopist (/game), the ski game, and its leaderboard. */
+    puckopistEnabled: boolean().notNull().default(true),
+    /** Whether runs can be saved to the leaderboard (the game works anyway). */
+    puckopistSaving: boolean().notNull().default(true),
+    /** A link to the game in the start page's menu. */
+    puckopistInNav: boolean().notNull().default(false),
+    /** Flagged runs wait for an admin before showing on the leaderboard. */
+    puckopistHoldFlagged: boolean().notNull().default(true),
+    /** The leaderboard only counts runs from here on (set by resetting it). */
+    puckopistSince: timestamp({ withTimezone: true }),
     /**
      * The ticket sign-up form. Secret: only handed out (as the buy button and
      * QR code) once the release time has passed.
@@ -60,7 +70,7 @@ export const ticketUrlChanges = pgTable("ticket_url_changes", {
 /** Audit log of features being switched on and off. */
 export const featureChanges = pgTable("feature_changes", {
   id: serial().primaryKey(),
-  feature: text({ enum: ["battle", "ticketRelease"] }).notNull(),
+  feature: text({ enum: ["battle", "ticketRelease", "puckopist"] }).notNull(),
   enabled: boolean().notNull(),
   changedBy: text().notNull(),
   changedByName: text().notNull(),

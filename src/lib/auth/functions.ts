@@ -1,12 +1,19 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start"
 import { setResponseStatus } from "@tanstack/react-start/server"
+import { isJudge } from "@/lib/battle/judges.server"
 import { getAppSession } from "./session.server"
+import type { User } from "./types"
 
 /** Returns the signed-in user, or null. Safe to call from route loaders. */
-export const getUser = createServerFn({ method: "GET" }).handler(async () => {
-  const session = await getAppSession()
-  return session.data.user ?? null
-})
+export const getUser = createServerFn({ method: "GET" }).handler(
+  async (): Promise<User | null> => {
+    const session = await getAppSession()
+    const user = session.data.user
+    if (!user) return null
+    // Admins can do everything a judge can anyway.
+    return { ...user, isJudge: !user.isAdmin && (await isJudge(user.kthid)) }
+  }
+)
 
 /**
  * Server function middleware that rejects unauthenticated requests and puts

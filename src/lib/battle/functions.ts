@@ -3,8 +3,8 @@ import { desc, sql } from "drizzle-orm"
 import { z } from "zod"
 import { db } from "@/db"
 import { battle, battleEvents } from "@/db/schema"
-import { adminMiddleware } from "@/lib/auth/functions"
 import { requireFeature } from "@/lib/settings/functions"
+import { judgeMiddleware } from "./access"
 import { publish } from "./bus.server"
 import type { BattleLogEntry, BattleState, BattleUpdate, Side } from "./types"
 
@@ -27,9 +27,9 @@ export const getBattle = createServerFn({ method: "GET" }).handler(
   }
 )
 
-/** Recent hits, undos and resets, newest first. Admins only. */
+/** Recent hits, undos and resets, newest first. Admins and judges. */
 export const getBattleLog = createServerFn({ method: "GET" })
-  .middleware([adminMiddleware])
+  .middleware([judgeMiddleware])
   .handler(async (): Promise<BattleLogEntry[]> => {
     const rows = await db
       .select()
@@ -43,10 +43,10 @@ const sideSchema = z.enum(["jaeger", "minttu"])
 
 /**
  * Adds (`+1`) or takes back (`-1`) a point for one side, atomically so
- * simultaneous taps from several admins all count. Admins only.
+ * simultaneous taps from several people all count. Admins and judges.
  */
 export const scoreBattle = createServerFn({ method: "POST" })
-  .middleware([requireFeature("battle")])
+  .middleware([judgeMiddleware])
   .validator(
     z.object({
       side: sideSchema,

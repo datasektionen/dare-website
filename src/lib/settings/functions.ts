@@ -18,6 +18,7 @@ export type { Feature, Features } from "./features.server"
 const COLUMNS = {
   battle: "battleEnabled",
   ticketRelease: "ticketReleaseEnabled",
+  puckopist: "puckopistEnabled",
 } as const satisfies Record<Feature, keyof typeof siteSettings.$inferInsert>
 
 /**
@@ -48,7 +49,7 @@ export const setFeature = createServerFn({ method: "POST" })
   .middleware([adminMiddleware])
   .validator(
     z.object({
-      feature: z.enum(["battle", "ticketRelease"]),
+      feature: z.enum(["battle", "ticketRelease", "puckopist"]),
       enabled: z.boolean(),
     })
   )
@@ -62,6 +63,7 @@ export const setFeature = createServerFn({ method: "POST" })
           ticketReleaseAt: new Date(DEFAULT_TICKET_RELEASE),
           battleEnabled: DEFAULT_FEATURES.battle,
           ticketReleaseEnabled: DEFAULT_FEATURES.ticketRelease,
+          puckopistEnabled: DEFAULT_FEATURES.puckopist,
           [column]: data.enabled,
           updatedBy: context.user.kthid,
         })
@@ -76,6 +78,7 @@ export const setFeature = createServerFn({ method: "POST" })
         .returning({
           battle: siteSettings.battleEnabled,
           ticketRelease: siteSettings.ticketReleaseEnabled,
+          puckopist: siteSettings.puckopistEnabled,
         })
       await tx.insert(featureChanges).values({
         feature: data.feature,

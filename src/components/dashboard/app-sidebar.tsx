@@ -158,10 +158,14 @@ function UserMenu({ user }: { user: User }) {
 export function AppSidebar({ user }: { user: User }) {
   const { data: features } = useSuspenseQuery(featuresQuery)
   const { setOpenMobile } = useSidebar()
-  // Admin-only pages for admins; switched-off features are hidden entirely.
+  // Admin-only pages for admins, scoring for judges too; switched-off
+  // features are hidden entirely.
   const visible = (items: NavItem[]) =>
     items.filter(
-      (i) => (!i.admin || user.isAdmin) && (!i.feature || features[i.feature])
+      (i) =>
+        (!i.admin || user.isAdmin) &&
+        (!i.judge || user.isAdmin || user.isJudge) &&
+        (!i.feature || features[i.feature])
     )
 
   return (

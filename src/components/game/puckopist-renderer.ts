@@ -1,5 +1,6 @@
 import {
   type GameEvent,
+  type Obstacle,
   Run,
   rng,
   type Skier,
@@ -18,7 +19,20 @@ import {
  *   camera as the canvas transform.
  */
 
-export type Hud = { score: number; cans: number; distance: number }
+export type Hud = {
+  score: number
+  cans: number
+  distance: number
+  /** The combo multiplier, 0 without one. */
+  combo: number
+}
+
+/** A finished run, for the server to check. */
+export type RunRecord = Hud & {
+  ticks: number
+  inputs: number[]
+  digest: number
+}
 
 type Particle = {
   x: number
@@ -41,6 +55,17 @@ const SKY_HOR = "#1a244f"
 /** The site's pink, for the skier's jacket. */
 const JACKET = "#e83d84"
 const PUCKO_ORANGE = "#ff9a1f"
+/**
+ * Obstacles glow in this red, which nothing else in the scene uses, so they
+ * stand out against both the dark sky and the lit snow.
+ */
+const DANGER = "#ff3347"
+/**
+ * How much taller obstacles are drawn than they hit (and a little longer):
+ * forgiving, and easier to see.
+ */
+const OBSTACLE_SCALE = 1.2
+const OBSTACLE_EXTRA = 8
 
 function canvas(w: number, h: number) {
   const c = document.createElement("canvas")
@@ -132,42 +157,104 @@ function treeSprite(color: string) {
   return c
 }
 
-/** A Pucko can: brown with an orange band, a lid, and a big P. */
-function canSprite() {
-  const w = 48
-  const h = 76
-  const c = canvas(w, h)
+/** Size of the Pucko bottle as drawn on the piste, in world units. */
+const BOTTLE_W = 22
+const BOTTLE_H = 44
+
+/**
+ * A Pucko bottle, like the real one: a short, stout glass bottle full of
+ * chocolate milk, a gold screw cap, and the logo (brown PUCKO letters edged
+ * in white on an orange disc with a brown rim). Drawn at 4× for sharpness.
+ */
+function bottleSprite() {
+  const k = 4
+  const W = BOTTLE_W * k
+  const H = BOTTLE_H * k
+  const c = canvas(W, H)
   const g = context(c)
-  const body = g.createLinearGradient(0, 0, w, 0)
-  body.addColorStop(0, "#2a160a")
-  body.addColorStop(0.35, "#7a4520")
-  body.addColorStop(0.55, "#9a5a2a")
-  body.addColorStop(1, "#2a160a")
-  g.fillStyle = body
-  g.beginPath()
-  g.roundRect(4, 8, w - 8, h - 12, 7)
+  g.scale(k, k)
+  const mid = BOTTLE_W / 2
+  const body = BOTTLE_W - 2
+  // The glass, from the neck out over round shoulders to a heavy base.
+  const glass = () => {
+    g.beginPath()
+    g.moveTo(mid - 4.5, 6.5)
+    g.lineTo(mid - 4.5, 9)
+    g.bezierCurveTo(mid - 4.5, 13, 1, 13, 1, 18)
+    g.lineTo(1, BOTTLE_H - 3)
+    g.quadraticCurveTo(1, BOTTLE_H - 0.5, 4, BOTTLE_H - 0.5)
+    g.lineTo(BOTTLE_W - 4, BOTTLE_H - 0.5)
+    g.quadraticCurveTo(BOTTLE_W - 1, BOTTLE_H - 0.5, BOTTLE_W - 1, BOTTLE_H - 3)
+    g.lineTo(BOTTLE_W - 1, 18)
+    g.bezierCurveTo(BOTTLE_W - 1, 13, mid + 4.5, 13, mid + 4.5, 9)
+    g.lineTo(mid + 4.5, 6.5)
+    g.closePath()
+  }
+  // Chocolate milk seen through the glass, darker at the edges.
+  const choc = g.createLinearGradient(1, 0, BOTTLE_W - 1, 0)
+  choc.addColorStop(0, "#2b1307")
+  choc.addColorStop(0.3, "#7a3f1a")
+  choc.addColorStop(0.55, "#8c4c22")
+  choc.addColorStop(1, "#2b1307")
+  glass()
+  g.fillStyle = choc
   g.fill()
-  const band = g.createLinearGradient(0, 0, w, 0)
-  band.addColorStop(0, "#b45e00")
-  band.addColorStop(0.4, PUCKO_ORANGE)
-  band.addColorStop(0.6, "#ffc15a")
-  band.addColorStop(1, "#b45e00")
-  g.fillStyle = band
-  g.fillRect(4, h * 0.36, w - 8, h * 0.3)
-  g.fillStyle = "#fff6e8"
-  g.font = `italic 900 ${h * 0.3}px "Big Shoulders Display", sans-serif`
+  g.lineWidth = 0.8
+  g.strokeStyle = "rgba(255,240,220,.55)"
+  g.stroke()
+  // Shine down the glass.
+  g.fillStyle = "rgba(255,255,255,.4)"
+  g.beginPath()
+  g.roundRect(3.2, 17, 1.6, BOTTLE_H - 22, 1)
+  g.fill()
+  g.fillStyle = "rgba(255,255,255,.25)"
+  g.fillRect(mid - 3.2, 7, 1, 4)
+
+  // Gold screw cap, with its ridges.
+  const gold = g.createLinearGradient(mid - 5.5, 0, mid + 5.5, 0)
+  gold.addColorStop(0, "#7d5a12")
+  gold.addColorStop(0.35, "#f7dc85")
+  gold.addColorStop(0.6, "#d4a73c")
+  gold.addColorStop(1, "#6f4f0e")
+  g.fillStyle = gold
+  g.beginPath()
+  g.roundRect(mid - 5.5, 0.5, 11, 6.5, 1.2)
+  g.fill()
+  g.strokeStyle = "rgba(90,60,10,.55)"
+  g.lineWidth = 0.4
+  for (let x = mid - 4.5; x <= mid + 4.5; x += 1.5) {
+    g.beginPath()
+    g.moveTo(x, 1.5)
+    g.lineTo(x, 6.2)
+    g.stroke()
+  }
+
+  // The logo: an orange disc with a brown rim and the name across it.
+  const ly = 29
+  const r = body / 2
+  g.fillStyle = "#4a2410"
+  g.beginPath()
+  g.arc(mid, ly, r, 0, Math.PI * 2)
+  g.fill()
+  const disc = g.createRadialGradient(mid - 2, ly - 3, 1, mid, ly, r)
+  disc.addColorStop(0, "#ffb347")
+  disc.addColorStop(1, "#f47b00")
+  g.fillStyle = disc
+  g.beginPath()
+  g.arc(mid, ly, r - 1.2, 0, Math.PI * 2)
+  g.fill()
+  g.font = `900 4.1px "Archivo Black", "Arial Black", sans-serif`
   g.textAlign = "center"
   g.textBaseline = "middle"
-  g.fillText("P", w / 2, h * 0.52)
-  // Lid.
-  g.fillStyle = "#c9d2de"
-  g.beginPath()
-  g.ellipse(w / 2, 9, w / 2 - 5, 5, 0, 0, Math.PI * 2)
-  g.fill()
-  g.fillStyle = "#8e98a8"
-  g.beginPath()
-  g.ellipse(w / 2, 9, w / 2 - 11, 2.5, 0, 0, Math.PI * 2)
-  g.fill()
+  g.lineJoin = "round"
+  g.lineWidth = 1
+  g.strokeStyle = "#ffffff"
+  g.strokeText("PUCKO", mid, ly - 0.4)
+  g.fillStyle = "#4a2410"
+  g.fillText("PUCKO", mid, ly - 0.4)
+  g.font = `700 2px "Instrument Sans", Arial, sans-serif`
+  g.fillStyle = "#ffffff"
+  g.fillText("CHOKLAD", mid, ly + 4)
   return c
 }
 
@@ -256,6 +343,11 @@ export class PuckopistRenderer {
   private dpr = 1
   /** Screen px per world unit. */
   private s = 1
+  /**
+   * Extra size for things that must stay easy to see (signs, red edges,
+   * bottles) when the piste is zoomed out on a small screen.
+   */
+  private boost = 1
 
   private run: Run
   private playing = false
@@ -268,11 +360,12 @@ export class PuckopistRenderer {
   private hud = ""
 
   private sky: HTMLCanvasElement | null = null
-  private readonly can = canSprite()
+  private readonly bottle = bottleSprite()
   private readonly trees = [treeSprite("#0b1430"), treeSprite("#09112a")]
   private readonly frontTree = treeSprite("#050a1a")
   private readonly warm = glowSprite("rgba(255,236,200,1)")
   private readonly orange = glowSprite("rgba(255,170,60,1)", 32)
+  private readonly danger = glowSprite("rgba(255,51,71,1)", 64)
   private readonly ranges: Range[] = [
     {
       noise: noise(11),
@@ -323,9 +416,9 @@ export class PuckopistRenderer {
     removeEventListener("resize", this.resize)
   }
 
-  /** Starts a new run on a new piste. */
-  play() {
-    this.run = new Run((Math.random() * 2 ** 31) | 0)
+  /** Starts a new run on the piste of `seed`. */
+  play(seed: number) {
+    this.run = new Run(seed)
     this.playing = true
     this.particles = []
     this.held = false
@@ -335,8 +428,14 @@ export class PuckopistRenderer {
 
   /** The current run's score, cans and distance. */
   stats(): Hud {
-    const { score, cans, distance } = this.run
-    return { score, cans, distance }
+    const { score, cans, distance, combo } = this.run
+    return { score, cans, distance, combo }
+  }
+
+  /** The run so far, with what the server needs to replay it. */
+  result(): RunRecord {
+    const { ticks, inputs, digest } = this.run
+    return { ...this.stats(), ticks, inputs: [...inputs], digest }
   }
 
   press() {
@@ -354,14 +453,18 @@ export class PuckopistRenderer {
     this.dpr = Math.min(devicePixelRatio || 1, 2)
     this.canvas.width = Math.round(this.W * this.dpr)
     this.canvas.height = Math.round(this.H * this.dpr)
-    this.s = Math.min(1.5, Math.max(0.5, Math.min(this.H / 900, this.W / 520)))
+    // At least ~1 s of piste ahead of the skier on every screen, so phones
+    // get as much warning as a laptop.
+    const ahead = this.W * (1 - this.anchor().x)
+    this.s = Math.min(1.5, Math.max(0.45, Math.min(this.H / 900, ahead / 950)))
+    this.boost = Math.min(1.5, Math.max(1, 0.7 / this.s))
     this.sky = skyCanvas(this.W, this.H)
     this.snapCamera()
   }
 
   /** Where the skier sits on screen, as fractions of its size. */
   private anchor() {
-    return { x: this.W < this.H ? 0.2 : 0.3, y: 0.5 }
+    return { x: this.W < this.H ? 0.14 : 0.3, y: 0.5 }
   }
 
   private snapCamera() {
@@ -388,7 +491,8 @@ export class PuckopistRenderer {
   }
 
   private frame(now: number) {
-    const dt = Math.min(0.05, (now - (this.last || now)) / 1000)
+    // Never backwards, whatever timestamps the browser hands out.
+    const dt = Math.max(0, Math.min(0.05, (now - (this.last || now)) / 1000))
     this.last = now
     this.t += dt
 
@@ -397,7 +501,7 @@ export class PuckopistRenderer {
       this.pressed = false
       for (const e of events) this.react(e)
       const hud = this.stats()
-      const key = `${hud.score}/${hud.cans}/${hud.distance}`
+      const key = `${hud.score}/${hud.cans}/${hud.distance}/${hud.combo}`
       if (key !== this.hud) {
         this.hud = key
         this.opts.onHud(hud)
@@ -712,45 +816,208 @@ export class PuckopistRenderer {
     ctx.stroke()
   }
 
+  /**
+   * Obstacles, signposted by their `cue`: at the start a big warning sign and
+   * a strong red glow; further down a smaller sign, then none, and only a
+   * faint glow. The red edge always stays, so none is ever invisible.
+   */
   private drawObstacles(T: Terrain, x0: number, x1: number) {
     const ctx = this.ctx
+    // A slow pulse, to catch the eye without flashing.
+    const pulse = 0.5 + 0.5 * Math.sin(this.t * 5)
+    let lastSign = Number.NEGATIVE_INFINITY
     for (const o of T.obstacles) {
-      if (o.x < x0 - 60 || o.x > x1 + 60) continue
-      const y = T.height(o.x) + 3
-      const { w, h } = o
-      if (o.kind === "rock") {
-        ctx.fillStyle = "#2b3456"
-        ctx.beginPath()
-        ctx.moveTo(o.x - w / 2, y)
-        ctx.lineTo(o.x - w * 0.42, y - h * 0.6)
-        ctx.lineTo(o.x - w * 0.1, y - h)
-        ctx.lineTo(o.x + w * 0.3, y - h * 0.85)
-        ctx.lineTo(o.x + w / 2, y - h * 0.3)
-        ctx.lineTo(o.x + w / 2, y)
-        ctx.fill()
-        ctx.fillStyle = "#dbe5fb"
-        ctx.beginPath()
-        ctx.moveTo(o.x - w * 0.42, y - h * 0.6)
-        ctx.lineTo(o.x - w * 0.1, y - h - 3)
-        ctx.lineTo(o.x + w * 0.3, y - h * 0.88)
-        ctx.lineTo(o.x + w * 0.1, y - h * 0.7)
-        ctx.lineTo(o.x - w * 0.2, y - h * 0.78)
-        ctx.fill()
-      } else {
-        ctx.fillStyle = "#5b3a22"
-        ctx.beginPath()
-        ctx.roundRect(o.x - w / 2, y - h, w, h, h / 2)
-        ctx.fill()
-        ctx.fillStyle = "#b07f52"
-        ctx.beginPath()
-        ctx.ellipse(o.x + w / 2 - h / 2, y - h / 2, h / 3, h / 2, 0, 0, 7)
-        ctx.fill()
-        ctx.fillStyle = "#e6eeff"
-        ctx.beginPath()
-        ctx.roundRect(o.x - w / 2 + 4, y - h - 3, w - h, 6, 3)
-        ctx.fill()
-      }
+      if (o.x + o.w / 2 < x0 - 120 || o.x - o.w / 2 > x1 + 120) continue
+      const w = o.w + OBSTACLE_EXTRA
+      const h = o.h * OBSTACLE_SCALE
+      const front = o.x - w / 2
+      const glow = 0.15 + 0.85 * o.cue
+      // A red glow on the snow around it.
+      ctx.globalCompositeOperation = "lighter"
+      ctx.globalAlpha = glow * (0.55 + 0.3 * pulse)
+      const gy = T.height(o.x)
+      ctx.drawImage(this.danger, front - h, gy - h * 2, w + h * 2, h * 3)
+      ctx.globalAlpha = 1
+      ctx.globalCompositeOperation = "source-over"
+      // One warning sign in front of each group (rock pairs share one), as
+      // long as it's still signposted.
+      if (o.cue > 0.35 && o.x - lastSign > 260)
+        this.drawWarningSign(
+          T,
+          front - 22,
+          pulse,
+          (0.5 + 0.5 * o.cue) * this.boost
+        )
+      lastSign = o.x
+
+      if (o.kind === "rubble") this.drawRubble(T, o, glow)
+      else this.drawSolid(T, o, w, h, glow)
     }
+  }
+
+  /** Strokes the current path with the glowing red edge every obstacle has. */
+  private dangerEdge(glow: number) {
+    const ctx = this.ctx
+    ctx.save()
+    ctx.shadowColor = DANGER
+    ctx.shadowBlur = 16 * glow * this.s * this.dpr
+    ctx.lineJoin = "round"
+    ctx.lineWidth = (2.5 + glow) * this.boost
+    ctx.strokeStyle = DANGER
+    ctx.globalAlpha = 0.65 + 0.35 * glow
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  /** Rocks, boulders and logs (lying along the slope). */
+  private drawSolid(
+    T: Terrain,
+    o: Obstacle,
+    w: number,
+    h: number,
+    glow: number
+  ) {
+    const ctx = this.ctx
+    ctx.save()
+    ctx.translate(o.x, T.height(o.x) + 3)
+    if (o.kind === "log") ctx.rotate(Math.atan(T.slope(o.x)))
+    ctx.beginPath()
+    if (o.kind === "log") ctx.roundRect(-w / 2, -h, w, h, h / 2)
+    else {
+      ctx.moveTo(-w / 2, 0)
+      ctx.lineTo(-w * 0.42, -h * 0.6)
+      ctx.lineTo(-w * 0.1, -h)
+      ctx.lineTo(w * 0.3, -h * 0.85)
+      ctx.lineTo(w / 2, -h * 0.3)
+      ctx.lineTo(w / 2, 0)
+      ctx.closePath()
+    }
+    // A dark body with a glowing red edge.
+    const gr = ctx.createLinearGradient(0, -h, 0, 0)
+    if (o.kind === "log") {
+      gr.addColorStop(0, "#8a4e24")
+      gr.addColorStop(1, "#3a1d0b")
+    } else {
+      gr.addColorStop(0, "#4b5276")
+      gr.addColorStop(1, "#151933")
+    }
+    ctx.fillStyle = gr
+    ctx.fill()
+    this.dangerEdge(glow)
+
+    // Details on top: a log's bark lines and cut end, snow on a rock.
+    if (o.kind === "log") {
+      ctx.strokeStyle = "rgba(30,14,4,.55)"
+      ctx.lineWidth = 1.5
+      for (let x = -w / 2 + 14; x < w / 2 - h; x += 22) {
+        ctx.beginPath()
+        ctx.moveTo(x, -h * 0.35)
+        ctx.lineTo(x + 10, -h * 0.35)
+        ctx.stroke()
+      }
+      ctx.fillStyle = "#e0a56b"
+      ctx.beginPath()
+      ctx.ellipse(w / 2 - h / 2, -h / 2, h / 3, h / 2 - 2, 0, 0, 7)
+      ctx.fill()
+      ctx.fillStyle = "#ffffff"
+      ctx.beginPath()
+      ctx.roundRect(-w / 2 + 5, -h - 3, w - h - 2, 6, 3)
+      ctx.fill()
+    } else {
+      ctx.fillStyle = "#ffffff"
+      ctx.beginPath()
+      ctx.moveTo(-w * 0.38, -h * 0.62)
+      ctx.lineTo(-w * 0.1, -h - 2)
+      ctx.lineTo(w * 0.28, -h * 0.86)
+      ctx.lineTo(w * 0.1, -h * 0.72)
+      ctx.lineTo(-w * 0.2, -h * 0.8)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+
+  /** A long, low stretch of stones, following the snow. */
+  private drawRubble(T: Terrain, o: Obstacle, glow: number) {
+    const ctx = this.ctx
+    const w = o.w + OBSTACLE_EXTRA
+    const h = o.h * OBSTACLE_SCALE
+    const x0 = o.x - w / 2
+    // Stones of a stable, varied size along it.
+    const stones: { x: number; r: number }[] = []
+    for (let x = x0 + 8, i = 0; x < x0 + w - 6; i++) {
+      const r = h * (0.55 + 0.45 * hash(Math.floor(o.x) + i))
+      stones.push({ x, r })
+      x += r * 1.3
+    }
+    ctx.beginPath()
+    for (const st of stones) {
+      const y = T.height(st.x) + 3
+      ctx.moveTo(st.x + st.r, y)
+      ctx.ellipse(st.x, y, st.r, st.r * 0.95, 0, 0, Math.PI, true)
+    }
+    const gr = ctx.createLinearGradient(0, T.height(o.x) - h, 0, T.height(o.x))
+    gr.addColorStop(0, "#4b5276")
+    gr.addColorStop(1, "#151933")
+    ctx.fillStyle = gr
+    ctx.fill()
+    this.dangerEdge(glow)
+    ctx.fillStyle = "#ffffff"
+    for (const st of stones) {
+      const y = T.height(st.x) + 3
+      ctx.beginPath()
+      ctx.ellipse(
+        st.x - st.r * 0.15,
+        y - st.r * 0.8,
+        st.r * 0.5,
+        st.r * 0.2,
+        0,
+        0,
+        7
+      )
+      ctx.fill()
+    }
+  }
+
+  /** A red warning triangle on a post, the piste's sign for "look out". */
+  private drawWarningSign(
+    T: Terrain,
+    x: number,
+    pulse: number,
+    /** 1 is full size; smaller further down. */
+    scale = 1
+  ) {
+    const ctx = this.ctx
+    const y = T.height(x)
+    const top = y - 78 * scale
+    const size = 34 * scale
+    ctx.fillStyle = "#e9eefc"
+    ctx.fillRect(x - 2, top + size * 0.5, 4, y - top - size * 0.5)
+    ctx.globalCompositeOperation = "lighter"
+    ctx.globalAlpha = 0.6 + 0.4 * pulse
+    ctx.drawImage(
+      this.danger,
+      x - size * 1.3,
+      top - size * 0.9,
+      size * 2.6,
+      size * 2.6
+    )
+    ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = "source-over"
+    ctx.beginPath()
+    ctx.moveTo(x, top - size * 0.45)
+    ctx.lineTo(x + size * 0.55, top + size * 0.5)
+    ctx.lineTo(x - size * 0.55, top + size * 0.5)
+    ctx.closePath()
+    ctx.lineJoin = "round"
+    ctx.lineWidth = 4 * scale
+    ctx.strokeStyle = "#ffffff"
+    ctx.stroke()
+    ctx.fillStyle = DANGER
+    ctx.fill()
+    ctx.fillStyle = "#ffffff"
+    const bar = size * 0.12
+    ctx.fillRect(x - bar / 2, top - size * 0.12, bar, size * 0.38)
+    ctx.fillRect(x - bar / 2, top + size * 0.32, bar, bar)
   }
 
   private drawCans(T: Terrain, x0: number, x1: number) {
@@ -766,7 +1033,14 @@ export class PuckopistRenderer {
       ctx.save()
       ctx.translate(c.x, c.y + bob)
       ctx.rotate(Math.sin(this.t * 2 + c.x) * 0.15)
-      ctx.drawImage(this.can, -11, -17.5, 22, 35)
+      ctx.scale(this.boost, this.boost)
+      ctx.drawImage(
+        this.bottle,
+        -BOTTLE_W / 2,
+        -BOTTLE_H / 2,
+        BOTTLE_W,
+        BOTTLE_H
+      )
       ctx.restore()
     }
   }
@@ -776,6 +1050,9 @@ export class PuckopistRenderer {
     ctx.save()
     ctx.translate(s.x, s.y)
     ctx.rotate(s.angle)
+    // A little bigger when zoomed out on a phone, so the rider stays clear.
+    const k = Math.min(1.3, this.boost)
+    ctx.scale(k, k)
     ctx.lineCap = "round"
     ctx.lineJoin = "round"
 

@@ -17,6 +17,8 @@ export type NavItem = {
   icon?: Icon
   /** Only for dÅrestaben (admins). */
   admin?: boolean
+  /** For admins and Jäger vs Minttu judges. */
+  judge?: boolean
   /** Only shown while this optional feature is switched on. */
   feature?: Feature
 }
@@ -45,7 +47,7 @@ export const FEATURES: NavItem[] = [
     to: "/dashboard/battle",
     label: "Jäger vs Minttu",
     piste: "black",
-    admin: true,
+    judge: true,
     feature: "battle",
   },
   {
@@ -54,6 +56,7 @@ export const FEATURES: NavItem[] = [
     // Not a piste: all four colours are taken, and it's a game.
     icon: PersonSimpleSkiIcon,
     admin: true,
+    feature: "puckopist",
   },
 ]
 

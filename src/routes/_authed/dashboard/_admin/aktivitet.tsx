@@ -14,7 +14,7 @@ const FILTERS = {
   alla: { label: "Alla", match: () => true },
   battle: {
     label: "Jäger vs Minttu",
-    match: (a: Activity) => a.type === "battle",
+    match: (a: Activity) => a.type === "battle" || a.type === "battle-judge",
   },
   biljettslapp: {
     label: "Biljettsläpp",
@@ -23,7 +23,7 @@ const FILTERS = {
   },
   puckopist: {
     label: "Puckopist",
-    match: (a: Activity) => a.type === "game",
+    match: (a: Activity) => a.type === "game" || a.type === "game-admin",
   },
 } as const
 type Filter = keyof typeof FILTERS
@@ -74,7 +74,8 @@ function ActivityPage() {
   const tabs = (Object.keys(FILTERS) as Filter[]).filter(
     (k) =>
       (k !== "battle" || features.battle) &&
-      (k !== "biljettslapp" || features.ticketRelease)
+      (k !== "biljettslapp" || features.ticketRelease) &&
+      (k !== "puckopist" || features.puckopist)
   )
   const items = data.filter(FILTERS[visa].match)
   const counts = Object.fromEntries(

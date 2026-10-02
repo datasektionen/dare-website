@@ -34,8 +34,11 @@ import { cn } from "@/lib/utils"
 
 const KIND_LABEL = { hit: "+1", undo: "−1", reset: "Nollställde" } as const
 
-/** Lets admins score the Jäger vs Minttu battle shown on /battle. */
-export function BattleControls() {
+/**
+ * Lets admins and judges score the Jäger vs Minttu battle shown on /battle.
+ * Only admins can start a new round.
+ */
+export function BattleControls({ canReset }: { canReset: boolean }) {
   const { data } = useSuspenseQuery(battleQuery)
   const { data: log } = useQuery(battleLogQuery)
   const { hit, undo, reset, resetting } = useBattleActions()
@@ -135,15 +138,17 @@ export function BattleControls() {
             </kbd>{" "}
             på /battle för helskärm.
           </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setConfirmReset(true)}
-            disabled={resetting || data.jaeger + data.minttu === 0}
-          >
-            <ArrowCounterClockwiseIcon data-icon="inline-start" />
-            Nollställ
-          </Button>
+          {canReset && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmReset(true)}
+              disabled={resetting || data.jaeger + data.minttu === 0}
+            >
+              <ArrowCounterClockwiseIcon data-icon="inline-start" />
+              Nollställ
+            </Button>
+          )}
         </div>
 
         {!!log?.length && (

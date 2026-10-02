@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ADD COLUMN "puckopist_in_nav" boolean DEFAULT false NOT NULL;

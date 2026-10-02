@@ -3,6 +3,7 @@ import * as client from "openid-client"
 import { getOidcConfig, redirectUri } from "@/lib/auth/oidc.server"
 import { hasAdminPermission } from "@/lib/auth/permissions"
 import { getAppSession, getLoginFlowSession } from "@/lib/auth/session.server"
+import { rememberJudgeName } from "@/lib/battle/judges.server"
 
 export const Route = createFileRoute("/auth/callback")({
   server: {
@@ -41,15 +42,16 @@ export const Route = createFileRoute("/auth/callback")({
           return textResponse("Login failed.", 400)
         }
 
+        const name =
+          userinfo.name ??
+          [userinfo.given_name, userinfo.family_name].filter(Boolean).join(" ")
+        // Judges added before SSO knew their name get it now.
+        await rememberJudgeName(userinfo.sub, name)
         const session = await getAppSession()
         await session.update({
           user: {
             kthid: userinfo.sub,
-            name:
-              userinfo.name ??
-              [userinfo.given_name, userinfo.family_name]
-                .filter(Boolean)
-                .join(" "),
+            name,
             email: userinfo.email ?? "",
             // Anyone with an SSO account may log in; the `$dare:admin` Hive
             // permission, which SSO includes in userinfo, makes you an admin.

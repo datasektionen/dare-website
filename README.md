@@ -44,12 +44,17 @@ To add users, group members or permissions, edit `dev/nyckeln.yaml` and run
   permission `$dare:admin` (permission `admin` in the Hive system `dare`).
   SSO includes it in userinfo through the `permissions` scope, so the app never
   calls Hive itself. It's read at login, so changes in Hive apply at the next
-  login. The user is `{ kthid, name, email, isAdmin }`.
+  login. The user is `{ kthid, name, email, isAdmin, isJudge }`.
+- **Judges** may score Jäger vs Minttu and nothing else. Admins add their KTH
+  ids on the Jäger vs Minttu page (`battle_judges`, changes logged in
+  `battle_judge_changes`); `isJudge` is looked up on every request, so it
+  applies right away. `/domare` logs a judge in and goes straight to scoring.
 - **Pages:** put protected routes under `src/routes/_authed/`. `context.user`
   is non-null there. Gate admin-only content on `context.user.isAdmin` (see
   `_authed/dashboard.tsx`).
 - **Server functions:** use `.middleware([authMiddleware])` or
-  `.middleware([adminMiddleware])` from `@/lib/auth/functions`. Always check
+  `.middleware([adminMiddleware])` from `@/lib/auth/functions` (or
+  `judgeMiddleware` from `@/lib/battle/access` for scoring). Always check
   on the server; route guards only affect the UI.
 
 ## Dashboard
@@ -61,9 +66,9 @@ area. Pages under `src/routes/_authed/dashboard/_admin/` are for admins only.
 | --- | --- | --- |
 | Översikt | all | Summary tiles, quick scoring and recent activity |
 | Profil | all | Account, permission, theme, log out |
-| Jäger vs Minttu | admins | Score the battle, who has scored most |
+| Jäger vs Minttu | admins, judges | Score the battle, who has scored most; admins also manage judges and reset |
 | Biljettsläpp | admins | The ticket release time the landing page counts down to |
-| Puckopist | admins | Every saved run of the `/game` leaderboard; search by name, remove runs |
+| Puckopist | admins | The `/game` leaderboard: today's numbers, runs to review, hide/approve/remove runs, bans, saving on/off, reset |
 | Aktivitet | admins | Everything admins have changed, filterable with tabs |
 | Inställningar | admins | Switch optional features on and off (below) |
 
@@ -78,17 +83,31 @@ Switches are stored in `site_settings` and logged in `feature_changes`.
 | --- | --- | --- |
 | Biljettsläpp | on | The landing page stays, but without the countdown numbers |
 | Jäger vs Minttu | off | `/battle` redirects to the start page |
+| Puckopist | on | `/game` redirects to the start page |
 
 Profile pictures (avatars) come from `/api/avatar/<kthid>`, which looks them
 up in SSO's internal API (`SSO_API_URL`; SSO gets them from rfinger) and
 redirects to them. The links expire, so they're only cached in memory for a
 few hours. Without `SSO_API_URL`, avatars show initials.
 
-Runs saved in the Puckopist game (`/game`) are stored in `game_scores`; the
-game shows the top 5. Under **Puckopist**, admins see every run with its
-place and can remove one run, or every run under a name (ignoring case),
-e.g. names that aren't allowed. Removals made there are logged in
-`game_score_removals` and shown under **Aktivitet**.
+Puckopist (`/game`) never takes a score from the browser. Before each run the
+server hands out a single-use ticket (`game_runs`) with the piste's seed; the
+game records when jump is pressed and let go, and after the crash sends those
+presses with an HMAC made with the ticket's key. The server replays them on the
+same seed (the simulation is deterministic, see `src/lib/game/dmath.ts`) and
+saves its own score in `game_scores`. Runs finished faster than they could be
+played are refused; runs that don't match their replay, or were played with
+developer tools open, swapped-out timers or in slow motion, are flagged and
+(while **Granska flaggade åk** is on) wait for an admin to approve them. See
+`src/lib/game/anticheat.ts`.
+
+Players don't log in, so bans (`game_bans`) go by an encrypted device cookie,
+optionally a browser fingerprint or IP (rarely useful, as a whole party shares
+the same wifi), or words in the name. Shadow bans let the player think their
+runs are saved. Under **Puckopist**, admins can also remove runs (logged in
+`game_score_removals`), close saving, and reset the leaderboard (only newer
+runs count; nothing is deleted). Everything else they do there is logged in
+`game_admin_events`. All of it shows under **Aktivitet**.
 
 The ticket release time is stored in `site_settings` (a single row), and every
 change is logged in `ticket_release_changes`. Until an admin sets a time,

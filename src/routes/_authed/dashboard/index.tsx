@@ -1,6 +1,6 @@
 import { ArrowRightIcon, ArrowUpRightIcon } from "@phosphor-icons/react"
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { SIDE_BAR } from "@/components/battle/side-styles"
 import { ActivityList } from "@/components/dashboard/activity-list"
 import { PageHeader } from "@/components/dashboard/page-header"
@@ -18,6 +18,12 @@ import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_authed/dashboard/")({
   staticData: { title: "Översikt" },
+  // Judges are here to give points, so that's where they start.
+  beforeLoad: async ({ context }) => {
+    if (!context.user.isJudge) return
+    const features = await context.queryClient.ensureQueryData(featuresQuery)
+    if (features.battle) throw redirect({ to: "/dashboard/battle" })
+  },
   loader: async ({ context }) => {
     if (context.user.isAdmin)
       await context.queryClient.ensureQueryData(activityQuery)
@@ -231,7 +237,7 @@ function Overview() {
   const { user } = Route.useRouteContext()
   const { data: features } = useSuspenseQuery(featuresQuery)
   const firstName = user.name.split(" ")[0] || user.kthid
-  const showBattle = user.isAdmin && features.battle
+  const showBattle = (user.isAdmin || user.isJudge) && features.battle
   const date = today.format(new Date())
 
   return (

@@ -1,7 +1,8 @@
 import digitFont from "@fontsource/big-shoulders-display/files/big-shoulders-display-latin-900-normal.woff2?url"
 import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { fingerprint, sign, watchRun } from "@/components/game/anticheat-client"
 import { Leaderboard, SaveScore } from "@/components/game/leaderboard"
 import {
   type Hud,
@@ -19,9 +20,17 @@ import type { Lang } from "@/components/landing/countdown"
 import { LandingNav } from "@/components/landing/landing-nav"
 import { Snow } from "@/components/landing/snow"
 import { PillArrow, pillClass } from "@/components/landing/ticket-button"
+import { macMessage } from "@/lib/game/anticheat"
+import {
+  beginRun,
+  finishRun,
+  startRun,
+  type Ticket,
+} from "@/lib/game/functions"
 import type { ScoreEntry } from "@/lib/game/leaderboard"
-import type { GameEvent } from "@/lib/game/puckopist"
+import { CAN_POINTS, type GameEvent, packInputs } from "@/lib/game/puckopist"
 import { leaderboardQuery } from "@/lib/game/queries"
+import { featuresQuery } from "@/lib/settings/queries"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/game")({
@@ -38,6 +47,11 @@ export const Route = createFileRoute("/game")({
       },
     ],
   }),
+  // Only exists while switched on in the dashboard settings.
+  beforeLoad: async ({ context }) => {
+    const features = await context.queryClient.ensureQueryData(featuresQuery)
+    if (!features.puckopist) throw redirect({ to: "/" })
+  },
   loader: ({ context }) =>
     context.queryClient.ensureQueryData(leaderboardQuery),
   component: GamePage,
@@ -46,6 +60,22 @@ export const Route = createFileRoute("/game")({
 type Phase = "ready" | "playing" | "over"
 type Pop = { id: number; e: GameEvent; x: number; y: number; tilt: number }
 type Result = Hud & { record: boolean }
+/**
+ * Whether the run can be saved: the server checks it right after the crash.
+ * `offline` when there was no ticket (or no answer), `blocked` for banned
+ * players, `closed` when saving is switched off.
+ */
+type Check =
+  | { state: "checking" }
+  | { state: "ok"; runId: string }
+  | { state: "closed" | "rejected" | "offline" | "blocked" }
+
+/** Tickets older than this are swapped for a fresh one before riding. */
+const TICKET_FRESH = 15 * 60_000
+/** How long starting waits for a ticket still on its way. */
+const TICKET_WAIT = 2500
+
+type Fetched = { ticket: Ticket | null; at: number }
 
 const BEST_KEY = "puckopist-best"
 /** How long the wipeout plays out before the score is shown. */
@@ -91,13 +121,36 @@ function GamePage() {
   const [phase, setPhase] = useState<Phase>("ready")
   const phaseRef = useRef<Phase>("ready")
   const shownAt = useRef(0)
-  const [hud, setHud] = useState<Hud>({ score: 0, cans: 0, distance: 0 })
+  const [hud, setHud] = useState<Hud>({
+    score: 0,
+    cans: 0,
+    distance: 0,
+    combo: 0,
+  })
   const [best, setBest] = useState(0)
   const [result, setResult] = useState<Result | null>(null)
   /** This run, once saved to the leaderboard. */
   const [mine, setMine] = useState<ScoreEntry | null>(null)
   const [showBoard, setShowBoard] = useState(false)
   const [pops, setPops] = useState<Pop[]>([])
+  const [check, setCheck] = useState<Check>({ state: "offline" })
+  /** The run was saved but waits for an admin before it shows. */
+  const [held, setHeld] = useState(false)
+  /** The next run's ticket, fetched in advance. */
+  const nextTicket = useRef<Promise<Fetched> | null>(null)
+  /** The ticket of the run being ridden. */
+  const ticketRef = useRef<Ticket | null>(null)
+  const watcher = useRef<ReturnType<typeof watchRun> | null>(null)
+  const starting = useRef(false)
+
+  const fetchTicket = useCallback(() => {
+    const at = Date.now()
+    nextTicket.current = fingerprint()
+      .catch(() => null)
+      .then((fp) => startRun({ data: { fingerprint: fp } }))
+      .then((ticket) => ({ ticket, at }))
+      .catch(() => ({ ticket: null, at }))
+  }, [])
   // Phones and tablets get instructions for tapping instead of keys.
   const [touch, setTouch] = useState(false)
 
@@ -107,14 +160,65 @@ function GamePage() {
     setPhase(p)
   }, [])
 
-  const start = useCallback(() => {
-    if (Date.now() - shownAt.current < RESTART_GUARD) return
-    rendererRef.current?.play()
-    setHud({ score: 0, cans: 0, distance: 0 })
+  const start = useCallback(async () => {
+    if (Date.now() - shownAt.current < RESTART_GUARD || starting.current) return
+    starting.current = true
+    if (!nextTicket.current) fetchTicket()
+    let fetched = await Promise.race([
+      nextTicket.current,
+      new Promise<null>((r) => setTimeout(r, TICKET_WAIT, null)),
+    ])
+    if (fetched && Date.now() - fetched.at > TICKET_FRESH) {
+      fetchTicket()
+      fetched = await nextTicket.current
+    }
+    nextTicket.current = null
+    starting.current = false
+    const ticket = fetched?.ticket ?? null
+    ticketRef.current = ticket
+    // Without a ticket the run can't be saved, but it can still be ridden.
+    const run = ticket && "runId" in ticket ? ticket : null
+    if (run) beginRun({ data: { runId: run.runId } }).catch(() => {})
+    watcher.current?.stop()
+    watcher.current = watchRun()
+    rendererRef.current?.play(run?.seed ?? Math.floor(Math.random() * 2 ** 31))
+    setHud({ score: 0, cans: 0, distance: 0, combo: 0 })
     setPops([])
     setMine(null)
+    setHeld(false)
     changePhase("playing")
-  }, [changePhase])
+  }, [changePhase, fetchTicket])
+
+  /** Sends the run to the server to check, the moment it ends. */
+  const submitRun = useCallback(() => {
+    const renderer = rendererRef.current
+    const ticket = ticketRef.current
+    const flags = watcher.current?.flags() ?? []
+    watcher.current?.stop()
+    watcher.current = null
+    fetchTicket()
+    if (!renderer || !ticket || !("runId" in ticket)) {
+      setCheck({ state: ticket ? "blocked" : "offline" })
+      return
+    }
+    const r = renderer.result()
+    const inputs = packInputs(r.inputs)
+    const body = { ...r, runId: ticket.runId, inputs }
+    setCheck({ state: "checking" })
+    sign(ticket.key, macMessage(body))
+      .catch(() => "")
+      .then((mac) => finishRun({ data: { ...body, mac, flags } }))
+      .then((v) =>
+        setCheck(
+          !v.ok
+            ? { state: "rejected" }
+            : ticket.saving
+              ? { state: "ok", runId: ticket.runId }
+              : { state: "closed" }
+        )
+      )
+      .catch(() => setCheck({ state: "offline" }))
+  }, [fetchTicket])
 
   const onEvent = useCallback(
     (e: GameEvent, at: { x: number; y: number }) => {
@@ -126,6 +230,7 @@ function GamePage() {
       setTimeout(() => setPops((p) => p.filter((q) => q.id !== id)), 1300)
       if (e.kind !== "crash") return
 
+      submitRun()
       navigator.vibrate?.(80)
       setTimeout(() => {
         const stats = rendererRef.current?.stats()
@@ -140,7 +245,7 @@ function GamePage() {
         queryClient.invalidateQueries({ queryKey: leaderboardQuery.queryKey })
       }, OVER_DELAY)
     },
-    [changePhase, queryClient]
+    [changePhase, queryClient, submitRun]
   )
 
   useEffect(() => {
@@ -157,6 +262,12 @@ function GamePage() {
     renderer.start()
     return () => renderer.destroy()
   }, [onEvent])
+
+  // The first ticket, so the first run starts straight away.
+  useEffect(() => {
+    fetchTicket()
+    return () => watcher.current?.stop()
+  }, [fetchTicket])
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -268,7 +379,7 @@ function GamePage() {
                   className={cn(
                     DISPLAY,
                     ICE,
-                    "text-[clamp(64px,14vw,230px)] leading-[.85] uppercase [@media(max-height:500px)]:text-[64px]"
+                    "text-[clamp(44px,13.2vw,230px)] leading-[.85] uppercase [@media(max-height:500px)]:text-[64px]"
                   )}
                 >
                   Puckopist
@@ -295,6 +406,7 @@ function GamePage() {
                       <li>{touch ? L.jumpTouch : L.jump}</li>
                       <li>{touch ? L.flipTouch : L.flip}</li>
                       <li>{L.land}</li>
+                      <li>{L.comboHint}</li>
                     </ul>
                   </>
                 )}
@@ -330,22 +442,41 @@ function GamePage() {
                         {L.newBest}
                       </div>
                     )}
-                    {mine ? (
+                    {mine || held ? (
                       <p
                         role="status"
-                        className={cn("text-[15px] font-medium", SHADOW)}
+                        className={cn(
+                          "max-w-[34ch] text-[15px] font-medium",
+                          SHADOW
+                        )}
                       >
-                        {L.saved(mine.rank)}
+                        {mine ? L.saved(mine.rank) : L.held}
                       </p>
                     ) : (
-                      result.score > 0 && (
+                      result.score > 0 &&
+                      (check.state === "ok" || check.state === "checking" ? (
                         <SaveScore
+                          runId={check.state === "ok" ? check.runId : null}
                           run={result}
                           defaultName={defaultName}
-                          onSaved={setMine}
+                          onSaved={(entry) =>
+                            entry.rank === null
+                              ? setHeld(true)
+                              : setMine({ ...entry, rank: entry.rank })
+                          }
                           L={L}
                         />
-                      )
+                      ) : (
+                        <p
+                          role="status"
+                          className={cn(
+                            "max-w-[34ch] text-sm text-white/80",
+                            SHADOW
+                          )}
+                        >
+                          {L.cantSave[check.state]}
+                        </p>
+                      ))
                     )}
                   </div>
                   <Leaderboard L={L} mine={mine} admin={admin} />
@@ -450,6 +581,18 @@ function Scoreboard({ hud, L }: { hud: Hud; L: Texts }) {
           {hud.score}
         </div>
         <Label>{L.score}</Label>
+        {hud.combo > 1 && (
+          // Keyed on the value, so every step up replays the bump.
+          <span
+            key={hud.combo}
+            className={cn(
+              DISPLAY,
+              "mt-1 animate-[battle-bump_.5s_cubic-bezier(.2,.8,.2,1)] rounded-full bg-[#e83d84] px-3 py-0.5 text-[clamp(16px,1.8vw,24px)] leading-tight text-white italic shadow-[0_0_24px_rgba(232,61,132,.7)]"
+            )}
+          >
+            {L.combo(hud.combo)}
+          </span>
+        )}
       </div>
       <Stat value={hud.distance} label={L.metres} />
     </div>
@@ -459,7 +602,10 @@ function Scoreboard({ hud, L }: { hud: Hud; L: Texts }) {
 /** Trick names, can points and the wipeout, popping up where they happen. */
 function PopText({ pop, L }: { pop: Pop; L: Texts }) {
   const { e } = pop
-  if (e.kind === "can")
+  // Cans and plain jumps get a small number; tricks get the big words.
+  const plain =
+    e.kind === "land" && !e.flips && !e.bigAir && !e.perfect && e.combo < 2
+  if (e.kind === "can" || plain)
     return (
       <span
         className={cn(
@@ -468,7 +614,7 @@ function PopText({ pop, L }: { pop: Pop; L: Texts }) {
         )}
         style={{ left: pop.x, top: pop.y - 30 }}
       >
-        +10
+        +{e.kind === "can" ? CAN_POINTS : e.points}
       </span>
     )
 
@@ -478,8 +624,9 @@ function PopText({ pop, L }: { pop: Pop; L: Texts }) {
       : e.kind === "land"
         ? [
             e.flips > 0 && (L.flips[e.flips] ?? L.manyFlips(e.flips)),
-            e.bigAir && L.bigAir,
+            e.hugeAir ? L.hugeAir : e.bigAir && L.bigAir,
             e.perfect && L.perfect,
+            e.combo > 1 && L.combo(e.combo),
             `+${e.points}`,
           ].filter((l): l is string => !!l)
         : []

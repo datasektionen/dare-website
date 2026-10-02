@@ -20,11 +20,6 @@ export const Route = createFileRoute("/battle_/metatv")({
       { rel: "preload", href: "/battle/are.webp", as: "image" },
       { rel: "preload", href: "/battle/bottle-jaeger.webp", as: "image" },
       { rel: "preload", href: "/battle/bottle-minttu.webp", as: "image" },
-      ...Object.values(GLITTER).map((href) => ({
-        rel: "preload",
-        href,
-        as: "image",
-      })),
       ...Object.values(CROWNS).map((c) => ({
         rel: "preload",
         href: c.src,
@@ -70,13 +65,6 @@ const CROWNS: Record<Side, Sticker> = {
     width: 412,
     className: CROWN_DROP,
   },
-}
-
-/** CC0 silver glitter photos (Michelle Grewe), torn into scraps. */
-const GLITTER = {
-  strip: "/battle/stickers/glitter-strip.webp",
-  scrapA: "/battle/stickers/glitter-scrap-a.webp",
-  scrapB: "/battle/stickers/glitter-scrap-b.webp",
 }
 
 type Placed = {
@@ -159,18 +147,6 @@ function MetaTvSlide() {
           />
         ))}
 
-        {/* Scraps of glitter tape, slapped on by hand. */}
-        <img
-          src={GLITTER.scrapA}
-          alt=""
-          className="absolute top-1/2 left-1/2 w-[34vh] -translate-x-[54%] -translate-y-[46%] rotate-[-9deg]"
-        />
-        <img
-          src={GLITTER.scrapB}
-          alt=""
-          className="absolute top-[6.5vh] left-[15.5%] w-[13vh] rotate-[-13deg]"
-        />
-
         <h1
           className={`absolute top-[4vh] left-1/2 -translate-x-1/2 -rotate-2 text-[9vh] leading-none whitespace-nowrap ${CHEAP_SHADOW} ${FUN}`}
         >
@@ -182,20 +158,6 @@ function MetaTvSlide() {
         >
           40<span className="ml-[1.2vh] text-[7vh]">kr</span>
         </div>
-      </div>
-
-      {/* Two crooked strips of glitter tape over the seam, overlapping. */}
-      <div aria-hidden className="relative z-10 h-0">
-        <img
-          src={GLITTER.strip}
-          alt=""
-          className="absolute -top-[2.4vh] -left-[2vw] h-[5vh] w-[62vw] max-w-none rotate-[-1.4deg]"
-        />
-        <img
-          src={GLITTER.strip}
-          alt=""
-          className="absolute -top-[2.1vh] -right-[3vw] h-[4.4vh] w-[50vw] max-w-none -scale-x-100 rotate-[0.9deg]"
-        />
       </div>
 
       {/* Live score. */}

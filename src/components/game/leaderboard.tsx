@@ -4,7 +4,8 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query"
 import { useRef, useState } from "react"
-import { removeScores, submitScore } from "@/lib/game/functions"
+import { removeScores } from "@/lib/game/admin-functions"
+import { type Saved, submitScore } from "@/lib/game/functions"
 import {
   cleanName,
   NAME_MAX,
@@ -152,22 +153,29 @@ function Row({
 
 /** Name field for saving a run to the leaderboard. */
 export function SaveScore({
+  runId,
   run,
   defaultName,
   onSaved,
   L,
 }: {
+  /** The checked run; null while the server is still checking it. */
+  runId: string | null
   run: RunResult
   /** Used when no name has been saved on this device before. */
   defaultName: string
-  onSaved: (entry: ScoreEntry) => void
+  /** `rank` is null when the run waits for an admin before it shows. */
+  onSaved: (entry: Omit<ScoreEntry, "rank"> & { rank: number | null }) => void
   L: Texts
 }) {
   const [name, setName] = useState(() => readName() || defaultName)
   const inputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const save = useMutation({
-    mutationFn: (name: string) => submitScore({ data: { name, ...run } }),
+    mutationFn: (name: string): Promise<Saved> => {
+      if (!runId) throw new Error("Not checked yet")
+      return submitScore({ data: { runId, name } })
+    },
     onSuccess: ({ id, rank }, name) => {
       storeName(name)
       onSaved({ id, rank, name, ...run, at: new Date().toISOString() })
@@ -181,7 +189,7 @@ export function SaveScore({
       className="flex w-full max-w-sm flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault()
-        if (!clean || save.isPending) return
+        if (!clean || !runId || save.isPending) return
         // Closes the keyboard on phones.
         inputRef.current?.blur()
         save.mutate(clean)
@@ -212,15 +220,18 @@ export function SaveScore({
         />
         <button
           type="submit"
-          disabled={!clean || save.isPending}
+          disabled={!clean || !runId || save.isPending}
           className="h-12 shrink-0 cursor-pointer rounded-full bg-[#e83d84] px-6 font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_8px_30px_rgba(232,61,132,.4)] transition-colors hover:bg-[#f0529a] disabled:cursor-default disabled:opacity-50"
         >
-          {save.isPending ? L.saving : L.save}
+          {!runId ? L.checking : save.isPending ? L.saving : L.save}
         </button>
       </div>
       {save.isError && (
         <p role="alert" className="text-sm text-[#ffb3cf]">
-          {L.saveFailed}
+          {/* The server's reason when it gave one, e.g. a closed leaderboard. */}
+          {save.error instanceof Error && save.error.message.length < 80
+            ? save.error.message
+            : L.saveFailed}
         </p>
       )}
     </form>

@@ -9,6 +9,7 @@ import { Scene } from "@/components/landing/scene"
 import { Snow } from "@/components/landing/snow"
 import { TicketButton } from "@/components/landing/ticket-button"
 import { BIG_QR, TicketQr } from "@/components/landing/ticket-qr"
+import { gameLinkQuery } from "@/lib/game/queries"
 import { featuresQuery } from "@/lib/settings/queries"
 import {
   LIVE_MS,
@@ -59,6 +60,7 @@ export const Route = createFileRoute("/")({
     const [release] = await Promise.all([
       context.queryClient.ensureQueryData(ticketReleaseQuery),
       context.queryClient.ensureQueryData(featuresQuery),
+      context.queryClient.ensureQueryData(gameLinkQuery),
     ])
     if (Date.now() >= new Date(release.at).getTime())
       await context.queryClient.ensureQueryData(ticketLinkQuery)
@@ -75,6 +77,7 @@ function Landing() {
   })
   // Switched off in the dashboard once tickets are out: hide the numbers.
   const showCountdown = useSuspenseQuery(featuresQuery).data.ticketRelease
+  const { data: showGame } = useSuspenseQuery(gameLinkQuery)
   const release = useMemo(() => new Date(data.at), [data.at])
   const [released, setReleased] = useState(
     () => Date.now() >= release.getTime()
@@ -129,6 +132,7 @@ function Landing() {
       <LandingNav
         lang={lang}
         onLang={setLang}
+        game={showGame}
         className="fixed inset-x-0 top-0 z-10"
       />
 

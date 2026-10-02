@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
+  boolean,
   check,
   integer,
   pgTable,
@@ -34,4 +35,28 @@ export const battleEvents = pgTable("battle_events", {
   by: text().notNull(),
   byName: text().notNull(),
   at: timestamp({ withTimezone: true }).notNull().defaultNow(),
+})
+
+/**
+ * People who may score the battle without being admins (e.g. bartenders at
+ * the pub): they get the scoring page and nothing else.
+ */
+export const battleJudges = pgTable("battle_judges", {
+  kthid: text().primaryKey(),
+  /** From SSO when added, or from their first login. */
+  name: text(),
+  addedBy: text().notNull(),
+  addedByName: text().notNull(),
+  addedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+})
+
+/** Audit log of judges being added and removed. */
+export const battleJudgeChanges = pgTable("battle_judge_changes", {
+  id: serial().primaryKey(),
+  kthid: text().notNull(),
+  name: text(),
+  added: boolean().notNull(),
+  changedBy: text().notNull(),
+  changedByName: text().notNull(),
+  changedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 })

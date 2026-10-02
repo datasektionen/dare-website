@@ -2,6 +2,7 @@ import { MonitorPlayIcon } from "@phosphor-icons/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, redirect } from "@tanstack/react-router"
 import { BattleControls } from "@/components/admin/battle-controls"
+import { BattleJudges } from "@/components/admin/battle-judges"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { UserAvatar } from "@/components/dashboard/user-avatar"
 import { Button } from "@/components/ui/button"
@@ -15,22 +16,29 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { useNow } from "@/hooks/use-now"
 import { battleStatsQuery } from "@/lib/activity/queries"
-import { battleLogQuery, battleQuery } from "@/lib/battle/queries"
+import { battleLogQuery, battleQuery, judgesQuery } from "@/lib/battle/queries"
 import { featuresQuery } from "@/lib/settings/queries"
 import { formatRelative } from "@/lib/time"
 
-export const Route = createFileRoute("/_authed/dashboard/_admin/battle")({
+/** Scoring, for admins and judges (who see nothing else). */
+export const Route = createFileRoute("/_authed/dashboard/battle")({
   staticData: { title: "Jäger vs Minttu" },
   head: () => ({ meta: [{ title: "Jäger vs Minttu · Dashboard · dÅre 27" }] }),
   beforeLoad: async ({ context }) => {
+    const { user } = context
+    if (!user.isAdmin && !user.isJudge) throw redirect({ to: "/dashboard" })
     const features = await context.queryClient.ensureQueryData(featuresQuery)
-    if (!features.battle) throw redirect({ to: "/dashboard/installningar" })
+    if (!features.battle)
+      throw redirect({
+        to: user.isAdmin ? "/dashboard/installningar" : "/dashboard",
+      })
   },
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(battleQuery),
       context.queryClient.ensureQueryData(battleLogQuery),
       context.queryClient.ensureQueryData(battleStatsQuery),
+      context.user.isAdmin && context.queryClient.ensureQueryData(judgesQuery),
     ]),
   component: BattlePage,
 })
@@ -94,6 +102,7 @@ function Judges() {
 }
 
 function BattlePage() {
+  const { user } = Route.useRouteContext()
   return (
     <>
       <PageHeader
@@ -112,8 +121,11 @@ function BattlePage() {
         }
       />
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-        <BattleControls />
-        <Judges />
+        <BattleControls canReset={user.isAdmin} />
+        <div className="flex flex-col gap-6">
+          <Judges />
+          {user.isAdmin && <BattleJudges />}
+        </div>
       </div>
     </>
   )

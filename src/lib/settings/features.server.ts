@@ -8,11 +8,17 @@ export type Features = {
   battle: boolean
   /** Ticket release countdown: its dashboard page and the landing numbers. */
   ticketRelease: boolean
+  /** Puckopist: /game, its leaderboard and its dashboard page. */
+  puckopist: boolean
 }
 export type Feature = keyof Features
 
 /** Used when no settings have been saved yet. */
-export const DEFAULT_FEATURES: Features = { battle: false, ticketRelease: true }
+export const DEFAULT_FEATURES: Features = {
+  battle: false,
+  ticketRelease: true,
+  puckopist: true,
+}
 
 /**
  * Which optional features are on. Server-only (it queries the database), for
@@ -23,6 +29,7 @@ export async function readFeatures(): Promise<Features> {
     .select({
       battle: siteSettings.battleEnabled,
       ticketRelease: siteSettings.ticketReleaseEnabled,
+      puckopist: siteSettings.puckopistEnabled,
     })
     .from(siteSettings)
     .where(eq(siteSettings.id, 1))

@@ -12,6 +12,11 @@ import { UserAvatar } from "./user-avatar"
 
 function describe(a: Activity) {
   if (a.type === "game") return describeRemoval(a)
+  if (a.type === "game-admin") return a.detail
+  if (a.type === "battle-judge") {
+    const who = a.name ? `${a.name} (${a.kthid})` : a.kthid
+    return a.added ? `gjorde ${who} till domare` : `tog bort ${who} som domare`
+  }
   if (a.type === "feature")
     return `${a.enabled ? "slog på" : "stängde av"} ${FEATURE_NAMES[a.feature]}`
   if (a.type === "ticket-release")
@@ -37,7 +42,7 @@ function Who({ a }: { a: Activity }) {
           <PisteMark piste="red" className="size-1.5" />
         ) : a.type === "feature" ? (
           <span className="size-1.5 bg-muted-foreground" />
-        ) : a.type === "game" ? (
+        ) : a.type === "game" || a.type === "game-admin" ? (
           <PersonSimpleSkiIcon weight="bold" className="size-2.5" />
         ) : (
           <span

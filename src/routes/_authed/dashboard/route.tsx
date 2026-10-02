@@ -37,7 +37,8 @@ export const Route = createFileRoute("/_authed/dashboard")({
       context.queryClient.ensureQueryData(featuresQuery),
       context.queryClient.ensureQueryData(ticketReleaseQuery),
     ])
-    if (context.user.isAdmin && features.battle)
+    const { user } = context
+    if ((user.isAdmin || user.isJudge) && features.battle)
       await context.queryClient.ensureQueryData(battleQuery)
   },
   component: DashboardLayout,
@@ -87,7 +88,7 @@ function DashboardLayout() {
       <SlopeBackdrop />
       {/* Flush sidebar and a see-through content area over the slope. */}
       <SidebarProvider>
-        {user.isAdmin && features.battle && <LiveBattle />}
+        {(user.isAdmin || user.isJudge) && features.battle && <LiveBattle />}
         <AppSidebar user={user} />
         <SidebarInset className="bg-transparent">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground">

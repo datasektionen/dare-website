@@ -1,4 +1,8 @@
-import { ArrowSquareOutIcon } from "@phosphor-icons/react"
+import {
+  ArrowSquareOutIcon,
+  type Icon,
+  PersonSimpleSkiIcon,
+} from "@phosphor-icons/react"
 import {
   useMutation,
   useQueryClient,
@@ -34,9 +38,10 @@ export const Route = createFileRoute("/_authed/dashboard/_admin/installningar")(
 
 const FEATURES: {
   feature: Feature
-  /** Matches the feature's marker in the sidebar. */
-  piste: Piste
-  to: "/dashboard/battle" | "/dashboard/biljettslapp"
+  /** Matches the feature's marker (or icon) in the sidebar. */
+  piste?: Piste
+  icon?: Icon
+  to: "/dashboard/battle" | "/dashboard/biljettslapp" | "/dashboard/puckopist"
   description: string
   whenOff: string
 }[] = [
@@ -56,11 +61,19 @@ const FEATURES: {
       "Storbildsskärmen och poängräkningen för biljettsläppspuben. Slå på den inför puben och av efteråt. Poängen sparas, så nollställ på Jäger vs Minttu-sidan för en ny rond.",
     whenOff: "Poängen finns kvar tills nästa gång.",
   },
+  {
+    feature: "puckopist",
+    icon: PersonSimpleSkiIcon,
+    to: "/dashboard/puckopist",
+    description: "Skidspelet på /game med topplista.",
+    whenOff: "Topplistan finns kvar.",
+  },
 ]
 
 function FeatureRow({
   feature,
   piste,
+  icon: FeatureIcon,
   to,
   description,
   whenOff,
@@ -93,7 +106,11 @@ function FeatureRow({
   return (
     <div className="well flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
       <div className="flex size-10 shrink-0 items-center justify-center bg-white ring-1 ring-border">
-        <PisteMark piste={piste} />
+        {piste ? (
+          <PisteMark piste={piste} />
+        ) : (
+          FeatureIcon && <FeatureIcon weight="bold" className="size-5" />
+        )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex flex-wrap items-center gap-2 text-sm font-medium">

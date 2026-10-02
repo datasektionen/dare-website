@@ -1,11 +1,11 @@
 // Aliased: this is not a React hook, it reads the request cookie.
 import { useSession as getSession } from "@tanstack/react-start/server"
 import { env } from "@/env"
-import type { User } from "./types"
+import type { SessionUser } from "./types"
 
 const secure = new URL(env.APP_URL).protocol === "https:"
 
-type AppSession = { user?: User }
+type AppSession = { user?: SessionUser }
 
 /** The signed-in user's session, stored encrypted in an HttpOnly cookie. */
 export function getAppSession() {
